@@ -59,8 +59,7 @@ def process_resume_with_claude(file_bytes):
         raise HTTPException(status_code=400, detail="Invalid file type. Please upload a JPEG or PNG image.")
 
     prompt = """
-    이력서 이미지에서 다음 JSON 형식에 맞추어 정보를 추출해주세요. 이미지에서 찾을 수 없는 정보는 빈 필드로 남겨두세요. JSON 외의 설명은 하지 말아주세요:
-
+    이력서 이미지에서 다음 JSON 형식에 맞추어 정보를 추출해주세요. 이미지에서 찾을 수 없는 정보는 빈 필드로 남겨두세요. 성 이름은 한글만 추출해주세요. JSON 외의 설명은 하지 말아주세요:
     {
       "personalInfo": {
         "firstName": "First Name",
