@@ -11,10 +11,28 @@ import uvicorn
 import os
 
 
+
+
 # Project configuration
 CLAUDE_API_KEY = os.getenv('CLAUDE_API_KEY')
 
 app = FastAPI()
+
+# CORS configuration
+from fastapi.middleware.cors import CORSMiddleware
+
+
+origins = ["*"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
 templates = Jinja2Templates(directory="templates")
 
 logging.basicConfig(level=logging.INFO)
@@ -125,7 +143,7 @@ def process_resume_with_claude(file_bytes):
 async def get_form(request: Request):
     return templates.TemplateResponse("upload_form.html", {"request": request})
 
-@app.post("/upload-resume/")
+@app.post("/upload-resume")
 async def upload_resume(file: UploadFile = File(...)):
     file_bytes = await file.read()
 

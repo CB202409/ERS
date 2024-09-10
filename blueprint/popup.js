@@ -6,21 +6,24 @@ document.addEventListener("DOMContentLoaded", () => {
       event.preventDefault();
       // TODO: URL 확인 로직 필요
       fetchURL = event.target.fetchURL?.value;
-      if (fetchURL) {
-        data = await fetchURLWithImageHandler(fetchURL);
-
-        console.log(data);
-        setChromeStorage(data);
+      imageData = event.target.uploadImage?.files[0];
+      if (fetchURL && imageData) {
+        data = await fetchURLWithImageHandler(fetchURL, imageData);
+        if (data) {
+          console.log(data);
+          setChromeStorage(data);
+        }
       } else {
-        alert("올바른 URL을 입력하쇼");
+        alert("올바른 URL과 파일을 입력하쇼");
       }
     });
 
   // 이미지 등록 버튼 처리
-  document.getElementById("upload-image").addEventListener("change", (evt) => {
+  document.getElementById("uploadImage").addEventListener("change", (evt) => {
     alert("이미지 등록: " + evt.target.files[0].name);
-    document.getElementById("upload-image-label").innerText = "등록 완료";
-    document.getElementById("upload-image-label").className += " btn-success disabled";
+    document.getElementById("uploadImageLabel").innerText = "등록 완료";
+    document.getElementById("uploadImageLabel").className +=
+      " btn-success disabled";
   });
 
   // 크롬 스토리지에 있는 내용을 dummy-html에 내보내기
@@ -74,7 +77,7 @@ function setChromeStorage(obj) {
 async function fetchURLWithImageHandler(fetchURL, imageData) {
   try {
     const formData = new FormData();
-    formData.append("image", imageData);
+    formData.append("file", imageData);
 
     const response = await fetch(fetchURL, {
       method: "POST",
