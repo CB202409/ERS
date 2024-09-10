@@ -1,0 +1,24 @@
+<html>
+  <head>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css"
+      integrity="sha512-jnSuA4Ss2PkkikSOLtYs8BlYIeeIK1h99ty4YfvRPAlzr377vr3CXDb7sb7eEEBYjDtcYj+AjBH3FLv5uSJuXg=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8" />
+  </head>
+  <body>
+    <h1>데이터 FETCH 후 크롬 스토리지 확인</h1>
+    <form id="fetchform1" action="" method="post">
+      <input type="text" name="fetchURL" id="fetchURL" value="http://127.0.0.1:8000" />
+      <input type="submit"  class="btn btn-primary" value="FETCH!" />
+    </form>
+
+    <h3>크롬 스토리지 데이터를 현재 페이지로 내보내기</h3>
+    <button type="submit"  id="exportbtn1" class="btn btn-secondary">Go!</button>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
