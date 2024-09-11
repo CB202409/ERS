@@ -39,18 +39,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // TODO: 태그 역시 JSON에서 가져와야함
 function fillFormHandler() {
-  chrome.storage.sync.get(["name", "age", "gender", "address"], (result) => {
-    document.getElementById("name").value = result.name;
-    document.getElementById("age").value = result.age;
-    document.getElementById("gender").value = result.gender;
-    document.getElementById("address").value = result.address;
+  chrome.storage.sync.get(["userInfo"], (result) => {
+    document.getElementById("name").value = result.userInfo.personalInfo.lastName + result.userInfo.personalInfo.firstName;
+    document.getElementById("dateOfBirth").value = result.userInfo.personalInfo.dateOfBirth;
+    document.getElementById("email").value = result.userInfo.personalInfo.email;
+    document.getElementById("address").value = result.userInfo.personalInfo.address;
+    document.getElementById("phoneNumber").value = result.userInfo.personalInfo.phoneNumber;
   });
 }
 
 // 크롬 스토리지 세팅하는 함수
 function setChromeStorage(obj) {
   chrome.storage.sync.set({
-    data: obj.data,
+    userInfo: obj.data,
   });
   console.log("chrome storage saved!!!");
 }

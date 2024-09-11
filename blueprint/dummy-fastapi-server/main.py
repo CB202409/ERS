@@ -19,9 +19,10 @@ app.add_middleware(
 async def root():
     return {
       "name": "신상범",
-      "age": "17",
-      "gender": "male",
-      "address": "서울 강남구 봉은사로"
+      "dateOfBirth": "1992-12-06",
+      "email": "abcd@naver.com",
+      "address": "서울 강남구 봉은사로",
+      "phoneNumber": "010-1234-5678"
       }
   
 @app.get("/")
