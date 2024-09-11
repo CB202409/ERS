@@ -3,19 +3,18 @@ async function autoFillFormHandler() {
   // console.log(pageTagInfo);
   // keys = ["userInfo"];
   
-  /* 현재 페이지에서 form 다 가져와 formSum에 텍스트로 저장 */
-  const forms = document.querySelectorAll("form");
-  let formSum = "";
-  forms.forEach((form) => {
-    formSum += form.innerHTML;
+  /* 현재 페이지에서 input 태그를 다 가져와 inputTagsSum에 텍스트로 저장 */
+  const inputTags = document.querySelectorAll("input");
+  let inputTagsSum = "";
+  inputTags.forEach((form) => {
+    inputTagsSum += form.outerHTML;
   });
   
-  /* formSum을 서버로 전송(Gemini) */
+  /* inputTagsSum을 서버로 전송(Gemini) */
   parserURL = "http://127.0.0.1:8001/";
-  pageTagInfo = await fetchPostToJson(parserURL, formSum);
+  pageTagInfo = await fetchPostToJson(parserURL, inputTagsSum);
   console.log(pageTagInfo);
 
-  console.log("밖1");
   /* 크롬 스토리지에서 데이터 가져오기 */
   keys = ["userInfo"];
   const userInfo = await new Promise((resolve, reject) => {
@@ -28,11 +27,10 @@ async function autoFillFormHandler() {
     });
   });
   console.log(userInfo);
-  console.log("밖2");
 
 
   /* userInfo값과 pageTagInfo값을 이용, 현재 페이지 채우기 */
-  for (const [key, cssSelector] of Object.entries(pageTagInfo.personalInfo)) {
+  for (const [key, cssSelector] of Object.entries(pageTagInfo.pageInfo.personalInfo)) {
     if (cssSelector) {
       const inputElement = document.querySelector(cssSelector);
       if (inputElement) {
