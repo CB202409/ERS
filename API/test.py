@@ -66,6 +66,29 @@ async def process_resumes(file1: UploadFile = File(...)):
                 "address":"input[name='address']",
                 ...
             }
+            education":[
+            {
+                "schoolName":"input[name='schoolName']",
+                "major":"input[name='major']",
+                "period":"input[name='period']",
+                "location":"input[name='location']",
+                "gpa":"input[name='gpa']",
+                "status":"input[name='status']"
+            }
+            ],
+            "cerifications":[{
+                "cerificationName":"input[name='certificationName']",
+                "acquisitionDate":"input[name='acquisitionDate']",
+                "issuingOrganization":"input[name='issuingOrganization']",
+                "score":"input[name='score']",
+                "category":"input[name='category']"
+            }],
+            "workExperience":[{
+                "companyName":"input[name='companyName']",
+                "position":"input[name='position']",
+                "employmentPeriod":"input[name='employmentPeriod']",
+                "location":"input[name='location']"
+            }]
             pageTagInfo{
                "education":"input[name='education']",
                "personalInfo":"input[name='personal-info']",
