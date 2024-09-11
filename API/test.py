@@ -11,7 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 app = FastAPI()
 
 # Google Gemini API 키 설정
-genai.configure(api_key="AIzaSyAsPTSBN5PUXbafzKMYLo-H6jwlCf5Am9k")
+genai.configure(api_key="")
 
 # 파일을 Gemini에 업로드하는 함수
 def upload_to_gemini(file_path, mime_type=None):
@@ -49,29 +49,30 @@ async def process_resumes(file1: UploadFile = File(...)):
             model_name="gemini-1.5-flash",
             generation_config=generation_config_1,
             system_instruction="""
-                When uploading an HTML file, I would like it to be output in the form of a CSS Selector.
-                For example,
-                {
-                "name":"name"
-                "birth":"date of birth"
-                "phone":"phone number"
-                ...
-                }
-                I would like it to be output like this.
+            CSS Selector 형태로 출력해줬으면 좋겠어
+            
+            예를들면
+            {
+            "name":"이름"
+            "birth":"생년월일"
+            "phone":"전화번호"
+            ...
+            }
+            이런식으로 출력해줬으면 좋겠어
 
-                And the existing data should be output as is, and only the part where new information is entered should be filled in.
-                Please display the missing information as an empty string ("").
-                Replace the required information.
-                The previously extracted information will be replaced with the new information.
+            그리고 기존 데이터는 그대로 출력해야 하며, 새로운 정보를 입력하는 부분만 충전하세요.
+            없는 정보는 빈 문자열("") 로 표시해주세요.
+            필수정보를 교체하세요
+            기존에 추출한 정보는 새로운 정보로 대체하겠습니다. 
 
-                The new required information is as follows.
-                {
-                "Name": "Jang Bogo",
-                "Phone": "010-1111-1111",
-                "Email": "woja@cas.com"
+            새로운 필수정보는 다음과 같습니다
+            {
+                "이름": "장보고",
+                "전화": "010-2222-1111",
+                "이메일": "woja@cas.com"
                 ...
-                }
-                You must enter the information as above.
+            }
+            위와 같은 정보를 입력해야 합니다.
             
     
             """
