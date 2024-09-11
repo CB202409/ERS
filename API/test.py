@@ -10,16 +10,6 @@ from fastapi.middleware.cors import CORSMiddleware
 # FastAPI 앱 생성
 app = FastAPI()
 
-# # CORS 설정 (모든 도메인 허용)
-# origins = ["*"]
-# app.add_middleware(
-#     CORSMiddleware,
-#     allow_origins=origins,
-#     allow_credentials=True,
-#     allow_methods=["*"],
-#     allow_headers=["*"],
-# )
-
 # Google Gemini API 키 설정
 genai.configure(api_key="AIzaSyAsPTSBN5PUXbafzKMYLo-H6jwlCf5Am9k")
 
@@ -33,64 +23,63 @@ def upload_to_gemini(file_path, mime_type=None):
 def analyze_image():
     return "안녕"
 
-# 업로드된 두 개의 파일을 처리하여 이력서 정보 비교
+# 업로드된 파일을 처리하여 이력서 정보 비교 및 두 프롬프트 처리
 @app.post("/test")
-async def process_resumes(file1: UploadFile = File(...), file2: UploadFile = File(...)):
+async def process_resumes(file1: UploadFile = File(...)):
     temp_file_path_1 = None
-    temp_file_path_2 = None
     try:
         # 첫 번째 파일을 임시 파일로 저장
         with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as temp_file_1:
             temp_file_1.write(await file1.read())
             temp_file_path_1 = temp_file_1.name
 
-        # 두 번째 파일을 임시 파일로 저장
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as temp_file_2:
-            temp_file_2.write(await file2.read())
-            temp_file_path_2 = temp_file_2.name
-
-        # Google Gemini에 두 파일을 업로드
+        # Google Gemini에 파일 업로드
         gemini_file_1 = upload_to_gemini(temp_file_path_1, mime_type=file1.content_type)
-        gemini_file_2 = upload_to_gemini(temp_file_path_2, mime_type=file2.content_type)
 
-        # 모델 설정 및 생성
-        generation_config = {
-            "temperature": 0.3,
+        # 첫 번째 프롬프트: HTML 파일에서 CSS Selector 추출
+        generation_config_1 = {
+            "temperature": 0.2,
             "top_p": 0.95,
             "top_k": 64,
             "max_output_tokens": 8192,
             "response_mime_type": "application/json",
         }
 
-        model = genai.GenerativeModel(
+        model_1 = genai.GenerativeModel(
             model_name="gemini-1.5-flash",
-            generation_config=generation_config,
+            generation_config=generation_config_1,
             system_instruction="""
-                두가지의 .html파일을 비교할거야 
-                거기서 출력되는건 비슷하거나 같은값 끼리 묶을거야
-                key:value 값으로 출력을 받을건데 중요한건 key:key 값으로 출력을 보내고싶어
-                value값은 안나와도 되고 비슷한 key값이 있으면 그걸 받을거야 
-                이걸 json형식으로 받고싶어 예를들어
-                공통json{
-                "사람인name": "잡코리아name",
-                "사람인email": "잡코리아email",
-                "사람인phone": "잡코리아mobile",
-                "사람인address": "잡코리아address",
-                "사람인birth": "잡코리아birth_date",
-                "사람인career": "잡코리아career",
-                "사람인resume_title": "잡코리아resume_title",
-                "사람인major": "잡코리아major",
-                "사람incompany": "잡코리아company",
-                "사람인job_title": "잡코리아position",
-                "사람인experience": "잡코리아experience"
+                When uploading an HTML file, I would like it to be output in the form of a CSS Selector.
+                For example,
+                {
+                "name":"name"
+                "birth":"date of birth"
+                "phone":"phone number"
+                ...
                 }
-                이런식으로 출력을 받고싶어 한가지의 html파일만 내보내지말고 내가 보내준 
+                I would like it to be output like this.
+
+                And the existing data should be output as is, and only the part where new information is entered should be filled in.
+                Please display the missing information as an empty string ("").
+                Replace the required information.
+                The previously extracted information will be replaced with the new information.
+
+                The new required information is as follows.
+                {
+                "Name": "Jang Bogo",
+                "Phone": "010-1111-1111",
+                "Email": "woja@cas.com"
+                ...
+                }
+                You must enter the information as above.
+            
+    
             """
         )
 
-        # Gemini API를 호출하여 이력서 정보를 추출
-        response = model.generate_content(
-            [gemini_file_1, gemini_file_2],
+        # 첫 번째 프롬프트 실행
+        response_1 = model_1.generate_content(
+            [gemini_file_1],
             safety_settings={
                 HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
                 HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
@@ -99,21 +88,91 @@ async def process_resumes(file1: UploadFile = File(...), file2: UploadFile = Fil
             }
         )
 
-        # 응답 데이터를 JSON으로 변환
-        response_content = response.candidates[0].content.parts[0].text
-        extracted_resume_data = json.loads(response_content)
+        # 응답을 JSON으로 변환
+        response_content_1 = response_1.candidates[0].content.parts[0].text
+        css_selector_data = json.loads(response_content_1)
+
+        # # 두 번째 프롬프트: 사용자 정보를 포함한 데이터 생성
+        # generation_config_2 = {
+        #     "temperature": 0.1,
+        #     "top_p": 0.95,
+        #     "top_k": 64,
+        #     "max_output_tokens": 8192,
+        #     "response_mime_type": "application/json",
+        # }
+
+        # model_2 = genai.GenerativeModel(
+        #     model_name="gemini-1.5-flash",
+        #     generation_config=generation_config_2,
+        #     system_instruction="""
+        #     Existing data should be printed as is, and only fill in the part where new information is entered.
+        #     Please indicate missing information as an empty string.
+        #     Replace required information
+        #     Previously extracted information will be replaced with new information. 
+
+        #     The new required information is as follows:
+        #     {
+        #         "name": "grocery report",
+        #         “Phone”: “010-1111-1111”,
+        #         "Email": "woja@cas.com"
+        #         ...
+        #     }
+        #     You must enter the information above.
+            # 첫번째 프롬프트 원본: 
+            # HTML 파일을 올리면 CSS Selector 형태로 출력해줬으면 좋겠어
+            # 예를들면
+            # {
+            # "name":"이름"
+            # "birth":"생년월일"
+            # "phone":"전화번호"
+            # ...
+            # }
+            # 이런식으로 출력해줬으면 좋겠어
+
+            # 그리고 기존 데이터는 그대로 출력해야 하며, 새로운 정보를 입력하는 부분만 충전하세요.
+            # 없는 정보는 빈 문자열("") 로 표시해주세요.
+            # 필수정보를 교체하세요
+            # 기존에 추출한 정보는 새로운 정보로 대체하겠습니다. 
+
+            # 새로운 필수정보는 다음과 같습니다
+            # {
+            #     "이름": "장보고",
+            #     "전화": "010-1111-1111",
+            #     "이메일": "woja@cas.com"
+            #     ...
+            # }
+            # 위와 같은 정보를 입력해야 합니다.
+            
+        #     """
+        # )
+
+        # # 두 번째 프롬프트 실행
+        # response_2 = model_2.generate_content(
+        #     [gemini_file_1],
+        #     safety_settings={
+        #         HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+        #         HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+        #         HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+        #         HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE
+        #     }
+        # )
+
+        # # 응답 데이터를 JSON으로 변환
+        # response_content_2 = response_2.candidates[0].content.parts[0].text
+        # filled_data = json.loads(response_content_2)
 
         # 임시 파일 삭제
         os.remove(temp_file_path_1)
-        os.remove(temp_file_path_2)
 
-        return extracted_resume_data
+        # 결과 반환: 두 프롬프트의 결과를 함께 반환
+        return {
+            "css_selector": css_selector_data,
+            # "filled_data": filled_data
+        }
 
     except Exception as e:
         if temp_file_path_1 and os.path.exists(temp_file_path_1):
             os.remove(temp_file_path_1)
-        if temp_file_path_2 and os.path.exists(temp_file_path_2):
-            os.remove(temp_file_path_2)
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
