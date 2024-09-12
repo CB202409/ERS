@@ -11,7 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 app = FastAPI()
 
 # Google Gemini API 키 설정
-genai.configure(api_key="AIzaSyAsPTSBN5PUXbafzKMYLo-H6jwlCf5Am9k")
+genai.configure(api_key="")
 
 # 파일을 Gemini에 업로드하는 함수
 def upload_to_gemini(file_path, mime_type=None):
@@ -49,22 +49,30 @@ async def process_resumes(file1: UploadFile = File(...)):
             model_name="gemini-1.5-flash",
             generation_config=generation_config_1,
             system_instruction="""
-            해당파일을 올리면 태그별로 모아줬으면 좋겠어
-            특히 기본정보인 userInfo{ firstname,lastname,email,phone_number,address,bitrhday,gender...} 는 userInfo객체에 넣을거고
-            pageInfo객체도 만들어서 내부에 {edu, persnalInfo, cetificatin ... } 정보를 출력해줬으면 좋겠어
-            특히, cetification에는 경력 정보를 넣어줬으면 좋겠어
-            그리고 firstname, lastname도 나누어 주어야하는데 만약에 한글이름이 홍길동이면 홍=firstname, 길동=lastname 이야
-            그런데 성,이름을 따로 적지않고 이름 만 있는경우는 그대로 name만 출력해 주면돼
-            또한 형식은 
-            userInfo{
-                "FirstName":"input[name='first-name']",
-                "LirstName":"input[name='last-name']",
+            내가 정보를 주면 태그별로 모아줬으면 좋겠어
+            그리고 firstName, lastName도 나누어 주어야하는데 만약에 한글이름이 홍길동이면 홍=firstName, 길=lastName 이야
+            그런데 firstName,lastName을 따로 적지않고 이름 만 있는경우는  firstName,lastName을 합쳐서 출력해 줘
+            personalInfo는 기본정보, education은 교육정보, certifications는 자격증정보, workExperience는 경력사항이야
+            정보가 있는 경우는 CSS Selector 형식으로 나오지않고, 무조건 값이 출력되었으면 좋겠어 
+            하지만 값이 없는경우에는 CSS Selector 형식으로 출력이 되었으면 좋겠어
+            특히 null은 절대 출력하지말고 빈칸으로 출력해주거나 CSS Selector 형식으로 출력해줘
+            빈칸인 경우는 "" 이렇게 출력되거나 비어있었으면 좋겠어
+            또한 cetification의 경우 경력이 하나면 cetificatin:[] 이렇게 하나, 
+            두개이상이면 {
+                            cetification:[],
+                            cetification:[]
+                } 이런식으로 줄 단위로 나왔으면 좋겠어
+
+            형식은 다음과 같아 
+
+            personalInfo{
+                "firstName":"input[name='first-name']",
+                "lastName":"input[name='last-name']",
                 "dateOfBirth":"input[name='birth date'],
                 "age":"input[name='age']",
                 "email":"input[name='email']",
                 "phoneNumber":"input[name='phone-number']",
                 "address":"input[name='address']",
-                ...
             }
             education":[
             {
@@ -76,7 +84,7 @@ async def process_resumes(file1: UploadFile = File(...)):
                 "status":"input[name='status']"
             }
             ],
-            "cerifications":[{
+            "certifications":[{
                 "cerificationName":"input[name='certificationName']",
                 "acquisitionDate":"input[name='acquisitionDate']",
                 "issuingOrganization":"input[name='issuingOrganization']",
@@ -89,21 +97,9 @@ async def process_resumes(file1: UploadFile = File(...)):
                 "employmentPeriod":"input[name='employmentPeriod']",
                 "location":"input[name='location']"
             }]
-            pageTagInfo{
-               "education":"input[name='education']",
-               "personalInfo":"input[name='personal-info']",
-                "cetificatin":"input[name='certification']"
-                ...
-                }
+        
             이런 형식으로 출력되었으면 좋겠어 
-            빈칸인 경우는 "" 이렇게 출력되거나 비어있었으면 좋겠어 
-            또한 cetification의 경우 경력이 하나면 cetificatin:[] 이렇게 하나, 
-            두개이상이면 {
-                            cetification:[],
-                            cetification:[]
-                } 이런식으로 줄 단위로 나왔으면 좋겠어 
-            
-    
+           
             """
         )
 
