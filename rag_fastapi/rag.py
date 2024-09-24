@@ -13,7 +13,8 @@ from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from fastapi import FastAPI
 from typing import Union
-from langchain_core.messages import AIMessage
+from langchain_core.messages import AIMessage, HumanMessage
+import tiktoken
 
 # .env 로드
 load_dotenv()
@@ -103,7 +104,12 @@ conversational_rag_chain = RunnableWithMessageHistory(
     output_messages_key="answer",
 )
 
+# 히스토리 최대 개수 (사용자, AI 메시지 합친 개수)
+MAX_HISTORY_LENGTH = 10
 
+def trim_history(history: ChatMessageHistory):
+    while len(history.messages) > MAX_HISTORY_LENGTH:
+        history.messages.pop(0)
 
 
 app = FastAPI()
@@ -111,17 +117,24 @@ app = FastAPI()
 
 @app.get("/")
 async def main(query: Union[str, None] = None, session_id: str = "default"):
+    history = get_session_history(session_id)
+    
     response = conversational_rag_chain.invoke(
         {"input": query},
         config={
             "configurable": {"session_id": session_id}
         },
     )
-    for message in store[session_id].messages:
+    
+    trim_history(history)
+    
+    for message in history.messages:
         if isinstance(message, AIMessage):
             prefix = "AI"
-        else:
+        elif isinstance(message, HumanMessage):
             prefix = "User"
+        else:
+            prefix = "Unknown"
         print(f"{prefix}: {message.content}\n")
     return {"result": response["answer"]}
 
