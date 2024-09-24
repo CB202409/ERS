@@ -22,7 +22,7 @@ from langchain_community.document_loaders import PyMuPDFLoader
 load_dotenv()
 
 # llm 모델 로드
-llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0)
+llm = ChatOpenAI(model="gpt-4o", temperature=0)
 
 
 # 최저임금 URL
@@ -45,12 +45,12 @@ loader = PyMuPDFLoader("./gun.pdf")
 docs = loader.load()
 
 text_splitter = RecursiveCharacterTextSplitter(
-  chunk_size=500, 
-  chunk_overlap=50,
+  chunk_size=1000, 
+  chunk_overlap=200,
   separators=["\n\n", "\n", ".", "!", "?", ";", ",", " "]
   )
 splits = text_splitter.split_documents(docs)
-vectorstore = Chroma.from_documents(documents=splits, embedding=OpenAIEmbeddings())
+vectorstore = Chroma.from_documents(documents=splits, embedding=OpenAIEmbeddings(model="text-embedding-3-small"))
 retriever = vectorstore.as_retriever()
 
 
