@@ -15,6 +15,7 @@ from fastapi import FastAPI
 from typing import Union
 from langchain_core.messages import AIMessage, HumanMessage
 from fastapi.middleware.cors import CORSMiddleware
+from langchain_community.document_loaders import PyMuPDFLoader
 
 
 # .env 로드
@@ -27,19 +28,27 @@ llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0)
 # 최저임금 URL
 
 ### 나무위키 파싱 ###
-loader = WebBaseLoader(
-    web_paths=("https://namu.wiki/w/갤럭시%20S%20시리즈",),
-    bs_kwargs=dict(parse_only=bs4.SoupStrainer(id="app")),
-)
+# loader = WebBaseLoader(
+#     web_paths=("https://namu.wiki/w/갤럭시%20S%20시리즈",),
+#     bs_kwargs=dict(parse_only=bs4.SoupStrainer(id="app")),
+# )
 
 ### XML 파싱(최저임금법) ###
 # loader = WebBaseLoader(
 #     web_paths=("https://www.law.go.kr/DRF/lawService.do?OC={아이디기입}&target=law&MST=218303&type=XML&mobileYn=&efYd=20200526",),
 # )
 
+### PDF 파싱 ###
+loader = PyMuPDFLoader("./gun.pdf")
+
+
 docs = loader.load()
 
-text_splitter = RecursiveCharacterTextSplitter(chunk_size=256, chunk_overlap=64)
+text_splitter = RecursiveCharacterTextSplitter(
+  chunk_size=500, 
+  chunk_overlap=50,
+  separators=["\n\n", "\n", ".", "!", "?", ";", ",", " "]
+  )
 splits = text_splitter.split_documents(docs)
 vectorstore = Chroma.from_documents(documents=splits, embedding=OpenAIEmbeddings())
 retriever = vectorstore.as_retriever()
@@ -66,7 +75,10 @@ history_aware_retriever = create_history_aware_retriever(
 
 
 ### Answer question ###
+from datetime import datetime
+
 system_prompt = (
+    f"The current date is {datetime.now().strftime('%Y-%m-%d')}."
     "You are an assistant for question-answering tasks. "
     "Use the following pieces of retrieved context to answer "
     "the question. If you don't know the answer, say that you "
@@ -156,4 +168,4 @@ async def main(query: Union[str, None] = None, session_id: str = "default"):
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("rag:app", host="localhost", port=8000, reload=True)
+    uvicorn.run("rag:app", host="0.0.0.0", port=8000, reload=True)
