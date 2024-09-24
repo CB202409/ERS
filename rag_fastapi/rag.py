@@ -14,7 +14,8 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from fastapi import FastAPI
 from typing import Union
 from langchain_core.messages import AIMessage, HumanMessage
-import tiktoken
+from fastapi.middleware.cors import CORSMiddleware
+
 
 # .env 로드
 load_dotenv()
@@ -112,8 +113,21 @@ def trim_history(history: ChatMessageHistory):
         history.messages.pop(0)
 
 
+
+
+# FastAPI 설정
 app = FastAPI()
 
+# CORS configuration
+origins = ["*"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/")
 async def main(query: Union[str, None] = None, session_id: str = "default"):
