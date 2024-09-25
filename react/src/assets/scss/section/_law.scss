@@ -1,0 +1,37 @@
+#Law {
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height 0.5s ease-in-out, padding 0.5s ease-in-out;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+
+    &.show {
+        max-height: 100vh;
+        padding: 16px;
+    }
+}
+
+.Law_title {
+    font-size: 2rem;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.Law_item {
+    margin-top: 15px;
+}
+
+.law-link {
+    color: #0073e6;
+    text-decoration: none;
+    font-size: 1.2rem;
+}
+
+.law-link:hover {
+    text-decoration: underline;
+    color: #005bb5;
+}

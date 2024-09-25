@@ -1,0 +1,32 @@
+//@mixin을 사용하여 스타일 규칙들을 묶어 믹스인으로 만들면
+//다른 스타일 규칙에서 @include 지시어를 사용하여 쉽게 불러와 재사용 가능
+
+// 가운데 정렬
+@mixin flex-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+    
+// 양쪽 정렬
+@mixin flex-between {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+// 중앙 정렬
+@mixin position-center {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+}
+
+// 상단 고정
+@mixin position-fixed {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+}   
