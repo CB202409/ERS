@@ -2,7 +2,7 @@ import React from "react";
 const footerText = [
     {
         title: "",
-        desc: ".",
+        desc: "",
         link: "",
     }
     

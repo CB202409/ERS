@@ -5,7 +5,7 @@ import HomeView from "./views/HomeView";
 
 const App = () => {
     return (
-        <BrowserRouter basename="/react">
+        <BrowserRouter>
             <Routes> 
                 <Route path="/" element={<HomeView />} />
             </Routes>

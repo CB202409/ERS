@@ -4,6 +4,8 @@ import axios from "axios";
 const Chatbot = () => {
   const [userInput, setUserInput] = useState("");
   const [chatLog, setChatLog] = useState([]);
+  const [typingMessage, setTypingMessage] = useState(""); 
+  const [isTyping, setIsTyping] = useState(false); 
 
   const sendMessage = async (e) => {
     e.preventDefault();
@@ -20,7 +22,9 @@ const Chatbot = () => {
           session_id: "default", // 세션별 id 분리해야 함
         }
       });
-      addMessageToChatLog("AI", response.data.result); // 내 api 형태에 맞춰 수정함r
+
+      startTyping(response.data.result);
+      // addMessageToChatLog("AI", response.data.result); // 내 api 형태에 맞춰 수정함
     } catch (error) {
       addMessageToChatLog("에러", "서버에 문제가 발생했습니다.");
       console.error("Error:", error);
@@ -33,16 +37,46 @@ const Chatbot = () => {
     setChatLog((prev) => [...prev, { sender, message }]);
   };
 
+  const startTyping = (message) => {
+    setIsTyping(true);
+    setTypingMessage(""); 
+
+    
+    if (message.length > 0) {
+      setTypingMessage(message.charAt(0));
+    }
+
+    let index = 0; 
+    const typingSpeed = 50; 
+
+    const typingInterval = setInterval(() => {
+      if (index < message.length) {
+        setTypingMessage((prev) => prev + message.charAt(index));
+        index++;
+      } else {
+        clearInterval(typingInterval);
+        addMessageToChatLog("AI", message);
+        setIsTyping(false); 
+      }
+    }, typingSpeed);
+  };
+
   return (
-    <div>
-      <h1>챗봇</h1>
-      <div>
+    <div id="Chatbot">
+      <h1>ChatBot</h1>
+      <div id="chat-log">
         {chatLog.map((msg, index) => (
-          <div key={index}>
+          <div key={index} className={msg.sender === "사용자" ? "user-message" : "ai-message"}>
             <strong>{msg.sender}: </strong>
             {msg.message}
           </div>
         ))}
+        {isTyping && (
+          <div className="ai-message">
+            <strong>AI: </strong>
+            {typingMessage}
+          </div>
+        )}
       </div>
       <form onSubmit={sendMessage}>
         <input

@@ -1,3 +1,6 @@
+//@mixin을 사용하여 스타일 규칙들을 묶어 믹스인으로 만들면
+//다른 스타일 규칙에서 @include 지시어를 사용하여 쉽게 불러와 재사용 가능
+
 // 가운데 정렬
 @mixin flex-center {
     display: flex;

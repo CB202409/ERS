@@ -2,14 +2,14 @@ import React, { useState } from "react";
 
 const headerNav = [
     {
-        title: "Cal",
-        url: "#Cal",
-        toggle: true 
-    },
-    {
         title: "Law",
         url: "#Law",
         toggle: true
+    },
+    {
+        title: "Cal",
+        url: "#Cal",
+        toggle: true 
     },
     {
         title: "chatbot",
