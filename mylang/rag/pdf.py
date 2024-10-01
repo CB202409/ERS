@@ -18,7 +18,7 @@ class PDFRetrievalChain(RetrievalChain):
         return docs
 
     def create_text_splitter(self):
-        return RecursiveCharacterTextSplitter(chunk_size=800, chunk_overlap=400)
+        return RecursiveCharacterTextSplitter(chunk_size=400, chunk_overlap=50)
 
 
     # def create_text_splitter(self):
