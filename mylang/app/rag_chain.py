@@ -75,7 +75,7 @@ class RAGChain:
         
         if response == "grounded":
             session_id = state["session_id"]
-            self.update_chat_history(session_id, state["question"], response)        
+            self.update_chat_history(session_id, state["first_question"], state["answer"])        
         
         return GraphState(
             relevance=response, question=state["question"], answer=state["answer"]
@@ -119,7 +119,9 @@ class RAGChain:
     def update_chat_history(self, session_id: str, question: str, answer: str):
         if session_id not in self.chat_histories:
             self.chat_histories[session_id] = []
-        self.chat_histories[session_id].append((question, answer))
+        history_store_answer = "AI: " + answer + "\n"
+        history_store_question = "User: " + question + "\n"
+        self.chat_histories[session_id].append((history_store_question, history_store_answer))
 
     def process_question(self, question: str, session_id: str):
         inputs = GraphState(question=question, session_id=session_id, first_question=question)
