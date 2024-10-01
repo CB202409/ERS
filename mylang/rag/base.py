@@ -125,12 +125,16 @@ class RetrievalChain(ABC):
 
     def create_prompt(self):
         prompt = ChatPromptTemplate.from_template(
-            "당신은 질문-답변(Question-Answering)을 수행하는 법률 전문 AI 어시스턴트입니다. 당신의 임무는 주어진 문맥(context) 에서 주어진 질문(question) 에 답하는 것입니다.\n"
-            "검색된 다음 문맥(context) 을 사용하여 질문(question) 에 답하세요. 만약, 주어진 문맥(context) 에서 답을 찾을 수 없다면 `주어진 정보에서 질문에 대한 정보를 찾을 수 없습니다` 라고 답하세요.\n"
+            "당신은 질문-답변(Question-Answering)을 수행하는 법률 전문 AI 어시스턴트입니다. 당신의 임무는 주어진 문맥(context)과 대화 기록(chat history)을 바탕으로 주어진 질문(question)에 답하는 것입니다.\n"
+            "검색된 다음 문맥(context)과 대화 기록(chat history)을 사용하여 질문(question)에 답하세요.\n"
+            "만약, 주어진 문맥(context)과 대화 기록(chat history)에서 답을 찾을 수 없다면 `주어진 정보에서 질문에 대한 정보를 찾을 수 없습니다` 라고 답하세요.\n"
             "답변(answer) 은 중학생이 이해할 수 있는 수준으로 답하세요\n"
             "출처(page, source)를 답변에 포함하세요. 답변은 한글로 답변해 주세요.\n"
             "\n\n"
             "HUMAN "
+            "#Chat History: "
+            "{chat_history}"
+            "\n\n"
             "#Question: "
             "{question}"
             "\n\n"
@@ -159,7 +163,7 @@ class RetrievalChain(ABC):
         model = self.create_model()
         prompt = self.create_prompt()
         self.chain = (
-            {"question": itemgetter("question"), "context": itemgetter("context")}
+            {"chat_history": itemgetter("chat_history"), "question": itemgetter("question"), "context": itemgetter("context")}
             | prompt
             | model
             | StrOutputParser()

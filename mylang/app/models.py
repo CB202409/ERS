@@ -1,3 +1,4 @@
+from pydantic import BaseModel
 from typing import TypedDict
 
 class GraphState(TypedDict):
@@ -5,3 +6,13 @@ class GraphState(TypedDict):
     context: str
     answer: str
     relevance: str
+    session_id: str
+    first_question: str
+
+class QueryRequest(BaseModel):
+    query: str
+    session_id: str
+
+class QueryResponse(BaseModel):
+    answer: str
+    # context: str
