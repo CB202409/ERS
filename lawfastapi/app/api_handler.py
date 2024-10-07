@@ -13,7 +13,7 @@ rag_chain = RAGChain(source_list)
 
 @router.post("/query", response_model=QueryResponse)
 async def handle_query(request: QueryRequest):
-    result = rag_chain.process_question(request.query, request.session_id)
+    result = await rag_chain.process_question(request.query, request.session_id)
     if result:
         return QueryResponse(answer=result["answer"])
     else:

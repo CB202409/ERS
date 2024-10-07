@@ -132,12 +132,12 @@ class RAGChain:
         history_store_question = "User: " + question + "\n"
         self.chat_histories[session_id].append((history_store_question, history_store_answer))
 
-    def process_question(self, question: str, session_id: str):
+    async def process_question(self, question: str, session_id: str):
         inputs = GraphState(question=question, session_id=session_id, first_question=question)
         config = {"configurable": {"session_id": session_id}}
         
         try:
-            result = self.workflow.invoke(inputs, config=config)
+            result = await self.workflow.ainvoke(inputs, config=config)
             return result
         except Exception as e:
             print(f"해당 질문을 처리하는 데 실패했습니다.: {str(e)}")
