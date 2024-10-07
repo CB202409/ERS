@@ -50,6 +50,15 @@ class RAGChain:
 
         return workflow.compile()
 
+    ### 멀티턴? ###
+    # 초기 질문이 법률 관련 질문인지 아닌지 확인하고, 그에 따라서 다른 함수로 넘어감
+    # def llm_answer(self, state: GraphState) -> GraphState:
+    #     if self.is_legal_question(state["question"]):
+    #         answer = self.llm_legal_answer(state)
+    #     else:
+    #         answer = self.llm_non_legal_answer(state)
+    #     return GraphState(answer=answer)
+
     def retrieve_document(self, state: GraphState) -> GraphState:
         retrieved_docs = self.pdf_retriever.invoke(state["question"])
         retrieved_docs = format_docs(retrieved_docs)

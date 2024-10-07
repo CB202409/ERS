@@ -120,21 +120,24 @@ class RetrievalChain(ABC):
     def create_model(self):
         return ChatOpenAI(model_name=OPENAI_MODEL, temperature=0)
 
-    # def create_prompt(self):
-    #     return hub.pull("teddynote/rag-korean-with-source")
 
     def create_prompt(self):
         prompt = ChatPromptTemplate.from_template(
             "당신은 질문-답변(Question-Answering)을 수행하는 법률 전문 AI 어시스턴트입니다. 당신의 임무는 주어진 문맥(context)과 대화 기록(chat history)을 바탕으로 주어진 질문(question)에 답하는 것입니다.\n"
-            "검색된 다음 문맥(context)과 대화 기록(chat history)을 사용하여 질문(question)에 답하세요.\n"
-            "만약, 주어진 문맥(context)과 대화 기록(chat history)에서 답을 찾을 수 없다면 `주어진 정보에서 질문에 대한 정보를 찾을 수 없습니다` 라고 답하세요.\n"
-            "답변(answer) 은 중학생이 이해할 수 있는 수준으로 답하세요\n"
-            "출처(page, source)를 답변에 포함하세요. 답변은 한글로 답변해 주세요.\n"
+            "다음 지침을 따라주세요:\n"
+            "1. 검색된 문맥(context)과 대화 기록(chat history)을 사용하여 질문(question)에 답하세요.\n"
+            "2. 주어진 문맥과 대화 기록에서 답을 찾을 수 없다면 '주어진 정보에서 질문에 대한 정보를 찾을 수 없습니다'라고 답하세요.\n"
+            "3. 답변은 중학생이 이해할 수 있는 수준으로 작성하세요.\n"
+            "4. 출처(page, source)를 답변에 포함하세요.\n"
+            "5. 답변은 한글로 작성해 주세요.\n"
+            "6. 이전 대화 내용을 참조하여 일관성 있는 답변을 제공하세요.\n"
+            "7. 사용자의 후속 질문이나 추가 설명 요청에 적절히 대응하세요.\n"
+            "8. 대화가 진행되더라도 초기에 제공된 맥락을 계속 참조하세요.\n"
             "\n\n"
-            "HUMAN "
             "#Chat History: "
             "{chat_history}"
             "\n\n"
+            "HUMAN "
             "#Question: "
             "{question}"
             "\n\n"
@@ -144,6 +147,7 @@ class RetrievalChain(ABC):
             "#Answer: "
         )
         return prompt
+
 
     @staticmethod
     def format_docs(docs):
