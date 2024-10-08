@@ -1,6 +1,6 @@
 from rag.pdf import PDFRetrievalChain
 from rag.utils import format_docs, format_searched_docs
-from app.models import GraphState
+from schema.graph_state import GraphState
 from langchain_upstage import UpstageGroundednessCheck
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
@@ -8,20 +8,24 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_community.tools.tavily_search import TavilySearchResults
 from langgraph.graph import END, StateGraph
 from langgraph.checkpoint.memory import MemorySaver
-from app.static_variables import Static_variables
+from config.static_variables import StaticVariables
 from typing import Dict, List, Tuple
 
 
 class RAGChain:
-    def __init__(self, source_list):
-        self.pdf = PDFRetrievalChain(source_list).create_chain(False)
-        self.pdf_retriever = self.pdf.retriever
-        self.pdf_chain = self.pdf.chain
+    def __init__(self, source_list = None):
+        if source_list is None:
+            self.pdf = PDFRetrievalChain(source_list).create_chain(False)
+        else:
+            print("Pinecone의 ", StaticVariables.PINECONE_NAMESPACE, "에 문서를 저장합니다:\n", source_list)
+            print("VDB에 중복된 데이터를 넣고 있는 지 확인하세요!")
+            self.pdf = PDFRetrievalChain(source_list).create_chain(True)
+        self.retriever = self.pdf.retriever
+        self.retrieval_chain = self.pdf.chain
         self.upstage_ground_checker = UpstageGroundednessCheck()
         
         self.workflow = self._create_workflow()
         self.memory = MemorySaver()
-        self.chat_model = ChatOpenAI(temperature=0, model=Static_variables.OPENAI_MODEL)  # ?
         self.chat_histories: Dict[str, List[Tuple[str, str]]] = {}
 
     def _create_workflow(self):
@@ -60,7 +64,7 @@ class RAGChain:
     #     return GraphState(answer=answer)
 
     def retrieve_document(self, state: GraphState) -> GraphState:
-        retrieved_docs = self.pdf_retriever.invoke(state["question"])
+        retrieved_docs = self.retriever.invoke(state["question"])
         retrieved_docs = format_docs(retrieved_docs)
         return GraphState(context=retrieved_docs)
 
@@ -69,7 +73,7 @@ class RAGChain:
         session_id = state["session_id"]
         chat_history = self.get_chat_history(session_id)
         
-        response = self.pdf_chain.invoke(
+        response = self.retrieval_chain.invoke(
             {"chat_history": chat_history, "question": state["question"], "context": state["context"]}
         )
         
@@ -108,7 +112,7 @@ class RAGChain:
                 ),
             ]
         )
-        model = ChatOpenAI(temperature=0, model="gpt-4o-mini")
+        model = ChatOpenAI(temperature=0, model=StaticVariables.REWRITE_MODEL)
         chain = prompt | model | StrOutputParser()
         response = chain.invoke(
             {
