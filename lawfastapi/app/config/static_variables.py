@@ -10,7 +10,8 @@ class StaticVariables:
     CHUNK_OVERLAP = 50
     
     # Retrieval
-    RETRIEVAL_K = 10
+    RETRIEVAL_K = 10  # Top-K 문서 반환 개수
+    RETRIEVAL_ALPHA = 0.5  # alpha=0.75로 설정한 경우, (0.75: Dense Embedding, 0.25: Sparse Embedding)
     
     # pinecone
     PINECONE_INDEX_NAME = "law-pdf"
