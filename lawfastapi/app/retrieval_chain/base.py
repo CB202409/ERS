@@ -58,7 +58,7 @@ class RetrievalChain(ABC):
         )
         return vectorstore
 
-    def pincone_hybrid_upsert(self, split_docs):
+    def pincone_hybrid_upsert(self, split_docs, namespace):
         # 파인콘 인덱스 로드
         pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
         pc_index = pc.Index("law-pdf")
@@ -84,7 +84,7 @@ class RetrievalChain(ABC):
 
         upsert_documents_parallel(
             index=pc_index,
-            namespace=StaticVariables.PINECONE_NAMESPACE,
+            namespace=namespace,
             contents=contents,
             metadatas=metadatas,
             sparse_encoder=sparse_encoder,
@@ -132,13 +132,38 @@ class RetrievalChain(ABC):
     def format_docs(docs):
         return "\n".join(docs)
 
-    def write_pinecone_with_docs(self, source_uri):
+    def write_pinecone_with_docs(self, source_uri, namespace):
         docs = self.load_documents(source_uri)
         text_splitter = self.create_text_splitter()
         split_docs = self.split_documents(docs, text_splitter)
-        self.pincone_hybrid_upsert(split_docs)  # 문서 벡터DB에 저장
+        self.pincone_hybrid_upsert(split_docs,namespace)  # 문서 벡터DB에 저장
 
     def create_chain(self, is_docs_input=False):
+        self.vectorstore = self.pinecone_load_vectorstore()  # 파인콘 로드
+
+        # 파인콘에 문서 업로드
+        if is_docs_input == True:
+            self.write_pinecone_with_docs(self.source_uri, StaticVariables.PINECONE_NAMESPACE)
+
+        # 파인콘 검색기 객체 생성
+        self.retriever = self.create_hybrid_retriever()
+
+        model = self.create_model()
+        prompt = self.create_prompt()
+        self.chain = (
+            {
+                "chat_history": itemgetter("chat_history"),
+                "question": itemgetter("question"),
+                "context": itemgetter("context"),
+            }
+            | prompt
+            | model
+            | StrOutputParser()
+        )
+        return self
+    
+    
+    def create_pinecone_namespace(self, is_docs_input=False):
         self.vectorstore = self.pinecone_load_vectorstore()  # 파인콘 로드
 
         # 파인콘에 문서 업로드
