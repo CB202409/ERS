@@ -30,7 +30,6 @@ import os
 class RetrievalChain(ABC):
     def __init__(self, memory: MemorySaver):
         self.source_uri = None
-        self.k = StaticVariables.RETRIEVAL_K
         self.memory = memory
 
     @abstractmethod
@@ -107,8 +106,8 @@ class RetrievalChain(ABC):
             embeddings=UpstageEmbeddings(
                 model=StaticVariables.UPSTAGE_RETRIEVE_MODEL
             ),  # Dense Embedder
-            top_k=self.k,  # Top-K 문서 반환 개수
-            alpha=0.5,  # alpha=0.75로 설정한 경우, (0.75: Dense Embedding, 0.25: Sparse Embedding)
+            top_k=StaticVariables.RETRIEVAL_K,  # Top-K 문서 반환 개수
+            alpha=StaticVariables.RETRIEVAL_ALPHA,  # alpha=0.75로 설정한 경우, (0.75: Dense Embedding, 0.25: Sparse Embedding)
         )
         return PineconeKiwiHybridRetriever(**pinecone_params)
 

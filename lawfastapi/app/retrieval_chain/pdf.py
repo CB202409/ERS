@@ -1,4 +1,4 @@
-from rag.base import RetrievalChain
+from retrieval_chain.base import RetrievalChain
 from langchain_community.document_loaders import PDFPlumberLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from typing import List
@@ -8,7 +8,6 @@ from config.static_variables import StaticVariables
 class PDFRetrievalChain(RetrievalChain):
     def __init__(self, source_uri):
         self.source_uri = source_uri
-        self.k = StaticVariables.RETRIEVAL_K
 
     def load_documents(self, source_uris: List[str]):
         docs = []
