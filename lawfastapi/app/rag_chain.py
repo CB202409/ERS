@@ -8,13 +8,11 @@ from langchain_openai import ChatOpenAI
 from langchain_core.output_parsers import StrOutputParser
 from langchain_community.tools.tavily_search import TavilySearchResults
 from langgraph.graph import END, StateGraph
-from langgraph.checkpoint.memory import MemorySaver
 from config.static_variables import StaticVariables
 from typing import Dict, List, Tuple
 import aiosqlite
 import json
 import asyncio
-
 
 class RAGChain:
     def __init__(self, source_list = None):
@@ -29,15 +27,15 @@ class RAGChain:
         self.upstage_ground_checker = UpstageGroundednessCheck()
         
         self.workflow = self._create_workflow()
-        self.memory = MemorySaver()
         self.db_path = StaticVariables.SQLITE_DB_PATH
         asyncio.run(self._init_database())
         
     async def _init_database(self):
         async with aiosqlite.connect(self.db_path) as db:
             await db.execute("""CREATE TABLE IF NOT EXISTS chat_history (
-                session_id TEXT PRIMARY KEY, 
-                history TEXT, 
+                session_id TEXT,
+                role TEXT,
+                message TEXT, 
                 timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
                 )
             """)
@@ -88,8 +86,9 @@ class RAGChain:
         # TODO: 들어온 세션 아이디로부터 chat_history 로드, chat_history에 저장
         session_id = state["session_id"]
         chat_history = await self.get_chat_history(session_id)
+        formatted_history = "\n".join(f"{role}: {message}" for role, message in chat_history)
         response = await self.retrieval_chain.ainvoke(
-            {"chat_history": chat_history, "question": state["question"], "context": state["context"]}
+            {"chat_history": formatted_history, "question": state["question"], "context": state["context"]}
         )
         return GraphState(answer=response)
 
@@ -123,7 +122,7 @@ class RAGChain:
         )
         model = ChatOpenAI(temperature=0, model=StaticVariables.REWRITE_MODEL)
         chain = prompt | model | StrOutputParser()
-        response = chain.ainvoke(
+        response = await chain.ainvoke(
             {
                 "question": state["question"],
                 "answer": state["answer"],
@@ -135,28 +134,20 @@ class RAGChain:
     def is_relevant(self, state: GraphState) -> GraphState:
         return state["relevance"]
     
-    async def get_chat_history(self, session_id: str) -> List[Tuple[str, str]]:
+    async def get_chat_history(self, session_id: str):
         async with aiosqlite.connect(self.db_path) as db:
-            async with db.execute("SELECT history FROM chat_history WHERE session_id = ?", (session_id,)) as cursor:
-                result = await cursor.fetchone()
-                if result and result[0]:
-                    try:
-                        return json.loads(result[0])
-                    except json.JSONDecodeError as e:
-                        print(f"Invalid JSON for session {session_id}. Returning empty history.")
-                        print("ERR: ", e)
-                        return []
-        return []
+            async with db.execute(
+                "SELECT role, message FROM (SELECT role, message, timestamp FROM chat_history WHERE session_id = ? ORDER BY timestamp DESC LIMIT 10) sub ORDER BY timestamp ASC", 
+                (session_id,)) as cursors:
+                result = await cursors.fetchall()
+                for node in result:
+                    print(f"node: {node}")
+        return result
     
     async def update_chat_history(self, session_id: str, question: str, answer: str):
-        history = await self.get_chat_history(session_id)
-        history_store_question = f"User: {question}"
-        history_store_answer = f"AI: {answer}"
-        history.append((history_store_question, history_store_answer))
-        
-        history_json = json.dumps(history)
         async with aiosqlite.connect(self.db_path) as db:
-            await db.execute("INSERT OR REPLACE INTO chat_history (session_id, history) VALUES (?,?)", (session_id, history_json))
+            await db.execute("INSERT INTO chat_history (session_id, role, message) VALUES (?,?,?)", (session_id, "user", question))
+            await db.execute("INSERT INTO chat_history (session_id, role, message) VALUES (?,?,?)", (session_id, "assistant", answer))
             await db.commit()
             
         
