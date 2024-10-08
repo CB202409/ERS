@@ -19,4 +19,5 @@ class StaticVariables:
     PDF_DIRECTORY_PATH = "./pdf/"
     SPARSE_ENCODER_PKL_PATH = "./sparse_encoder.pkl"
     
-    # 
+    # SQLite
+    SQLITE_DB_PATH = "./db/chat_history.db"

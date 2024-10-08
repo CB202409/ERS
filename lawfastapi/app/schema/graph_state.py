@@ -7,7 +7,6 @@ class GraphState(TypedDict):
     answer: str
     relevance: str
     session_id: str
-    first_question: str
 
 class QueryRequest(BaseModel):
     query: str
