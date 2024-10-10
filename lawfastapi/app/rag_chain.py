@@ -14,33 +14,38 @@ import aiosqlite
 import json
 import asyncio
 
+
 class RAGChain:
-    def __init__(self, source_list = None):
+    def __init__(self, source_list=None):
         if source_list is None:
             self.pdf = PDFRetrievalChain(source_list).create_chain(False)
         else:
-            print(f"Pinecone의 {StaticVariables.PINECONE_NAMESPACE}에 문서를 저장합니다:\n", source_list)
+            print(
+                f"Pinecone의 {StaticVariables.PINECONE_NAMESPACE}에 문서를 저장합니다:\n",
+                source_list,
+            )
             print("VDB에 중복된 데이터를 넣고 있는 지 확인하세요!")
             self.pdf = PDFRetrievalChain(source_list).create_chain(True)
         self.retriever = self.pdf.retriever
         self.retrieval_chain = self.pdf.chain
         self.upstage_ground_checker = UpstageGroundednessCheck()
-        
+
         self.workflow = self._create_workflow()
         self.db_path = StaticVariables.SQLITE_DB_PATH
         asyncio.run(self._init_database())
-        
+
     async def _init_database(self):
         async with aiosqlite.connect(self.db_path) as db:
-            await db.execute("""CREATE TABLE IF NOT EXISTS chat_history (
-                session_id TEXT,
-                role TEXT,
+            await db.execute(
+                """CREATE TABLE IF NOT EXISTS chat_history (
+                session_id TEXT, 
+                role TEXT, 
                 message TEXT, 
                 timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
                 )
-            """)
+            """
+            )
             await db.commit()
-            
 
     def _create_workflow(self):
         workflow = StateGraph(GraphState)
@@ -86,9 +91,15 @@ class RAGChain:
         # TODO: 들어온 세션 아이디로부터 chat_history 로드, chat_history에 저장
         session_id = state["session_id"]
         chat_history = await self.get_chat_history(session_id)
-        formatted_history = "\n".join(f"{role}: {message}" for role, message in chat_history)
+        formatted_history = "\n".join(
+            f"{role}: {message}" for role, message in chat_history
+        )
         response = await self.retrieval_chain.ainvoke(
-            {"chat_history": formatted_history, "question": state["question"], "context": state["context"]}
+            {
+                "chat_history": formatted_history,
+                "question": state["question"],
+                "context": state["context"],
+            }
         )
         return GraphState(answer=response)
 
@@ -96,8 +107,7 @@ class RAGChain:
         response = await self.upstage_ground_checker.arun(
             {"context": state["context"], "answer": state["answer"]}
         )
-         
-        
+
         return GraphState(
             relevance=response, question=state["question"], answer=state["answer"]
         )
@@ -133,40 +143,48 @@ class RAGChain:
 
     def is_relevant(self, state: GraphState) -> GraphState:
         return state["relevance"]
-    
-    async def get_chat_history(self, session_id: str):
-        async with aiosqlite.connect(self.db_path) as db:
-            async with db.execute(
-                "SELECT role, message FROM (SELECT role, message, timestamp FROM chat_history WHERE session_id = ? ORDER BY timestamp DESC LIMIT 10) sub ORDER BY timestamp ASC", 
-                (session_id,)) as cursors:
-                result = await cursors.fetchall()
-                for node in result:
-                    print(f"node: {node}")
-        return result
-    
-    async def update_chat_history(self, session_id: str, question: str, answer: str):
-        async with aiosqlite.connect(self.db_path) as db:
-            await db.execute("INSERT INTO chat_history (session_id, role, message) VALUES (?,?,?)", (session_id, "user", question))
-            await db.execute("INSERT INTO chat_history (session_id, role, message) VALUES (?,?,?)", (session_id, "assistant", answer))
-            await db.commit()
-            
-        
 
     async def process_question(self, question: str, session_id: str):
         inputs = GraphState(question=question, session_id=session_id)
         config = {"configurable": {"session_id": session_id}}
-        
+
         try:
             result = await self.workflow.ainvoke(inputs, config=config)
             if isinstance(result, dict) and "answer" in result:
-                await self.update_chat_history(session_id, question, result["answer"])        
+                await self.update_chat_history(session_id, question, result["answer"])
             return result
         except Exception as e:
             print(f"해당 질문을 처리하는 데 실패했습니다.: {str(e)}")
             return None
 
+    ### 히스토리 관리용 메소드들 ###
+    async def get_chat_history(self, session_id: str):
+        async with aiosqlite.connect(self.db_path) as db:
+            async with db.execute(
+                "SELECT role, message FROM (SELECT role, message, timestamp FROM chat_history WHERE session_id = ? ORDER BY timestamp DESC LIMIT 10) sub ORDER BY timestamp ASC",
+                (session_id,),
+            ) as cursors:
+                result = await cursors.fetchall()
+                for node in result:
+                    print(f"node: {node}")
+        return result
+
+    async def update_chat_history(self, session_id: str, question: str, answer: str):
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute(
+                "INSERT INTO chat_history (session_id, role, message) VALUES (?,?,?)",
+                (session_id, "user", question),
+            )
+            await db.execute(
+                "INSERT INTO chat_history (session_id, role, message) VALUES (?,?,?)",
+                (session_id, "assistant", answer),
+            )
+            await db.commit()
+
     # 히스토리 삭제용 메소드. 필요할 때 수정 후 사용
     async def clear_chat_history(self, session_id: str):
         async with aiosqlite.connect(self.db_path) as db:
-            await db.execute('DELETE FROM chat_history WHERE session_id = ?', (session_id,))
+            await db.execute(
+                "DELETE FROM chat_history WHERE session_id = ?", (session_id,)
+            )
             await db.commit()

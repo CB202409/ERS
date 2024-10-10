@@ -16,7 +16,7 @@ class StaticVariables:
     # pinecone
     PINECONE_INDEX_NAME = "law-pdf"
     PINECONE_NAMESPACE = "ns1"
-    PDF_DIRECTORY_PATH = "./pdf/"
+    PDF_DIRECTORY_PATH = "./docs/"
     SPARSE_ENCODER_PKL_PATH = "./sparse_encoder.pkl"
     
     # SQLite

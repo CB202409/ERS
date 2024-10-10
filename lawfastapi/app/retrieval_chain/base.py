@@ -61,7 +61,7 @@ class RetrievalChain(ABC):
     def pincone_hybrid_upsert(self, split_docs, namespace):
         # 파인콘 인덱스 로드
         pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
-        pc_index = pc.Index("law-pdf")
+        pc_index = pc.Index(StaticVariables.PINECONE_INDEX_NAME)
 
         # 문서 전처리
         contents, metadatas = preprocess_documents(
@@ -144,31 +144,6 @@ class RetrievalChain(ABC):
         # 파인콘에 문서 업로드
         if is_docs_input == True:
             self.write_pinecone_with_docs(self.source_uri, StaticVariables.PINECONE_NAMESPACE)
-
-        # 파인콘 검색기 객체 생성
-        self.retriever = self.create_hybrid_retriever()
-
-        model = self.create_model()
-        prompt = self.create_prompt()
-        self.chain = (
-            {
-                "chat_history": itemgetter("chat_history"),
-                "question": itemgetter("question"),
-                "context": itemgetter("context"),
-            }
-            | prompt
-            | model
-            | StrOutputParser()
-        )
-        return self
-    
-    
-    def create_pinecone_namespace(self, is_docs_input=False):
-        self.vectorstore = self.pinecone_load_vectorstore()  # 파인콘 로드
-
-        # 파인콘에 문서 업로드
-        if is_docs_input == True:
-            self.write_pinecone_with_docs(self.source_uri)
 
         # 파인콘 검색기 객체 생성
         self.retriever = self.create_hybrid_retriever()
