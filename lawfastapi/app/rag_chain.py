@@ -1,17 +1,14 @@
 import aiosqlite.context
 from retrieval_chain.pdf import PDFRetrievalChain
-from retrieval_chain.utils import format_docs, format_searched_docs
+from retrieval_chain.utils import format_docs
 from schema.graph_state import GraphState
 from langchain_upstage import UpstageGroundednessCheck
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
 from langchain_core.output_parsers import StrOutputParser
-from langchain_community.tools.tavily_search import TavilySearchResults
 from langgraph.graph import END, StateGraph
 from config.static_variables import StaticVariables
-from typing import Dict, List, Tuple
 import aiosqlite
-import json
 import asyncio
 
 
