@@ -25,6 +25,7 @@ class RAGChain:
             self.pdf = PDFRetrievalChain(source_list).create_chain(True)
         self.retriever = self.pdf.retriever
         self.retrieval_chain = self.pdf.chain
+        self.checker_model = ChatOpenAI(temperature=0, model=StaticVariables.OPENAI_MODEL)
         self.upstage_ground_checker = UpstageGroundednessCheck()
 
         self.workflow = self._create_workflow()
@@ -47,37 +48,75 @@ class RAGChain:
     def _create_workflow(self):
         workflow = StateGraph(GraphState)
 
+        workflow.add_node("question_checker", self.question_checker)
         workflow.add_node("retrieve", self.retrieve_document)
         workflow.add_node("llm_answer", self.llm_answer)
         workflow.add_node("relevance_check", self.relevance_check)
+        workflow.add_node("not_found_in_context", self.not_found_in_context)
         workflow.add_node("rewrite", self.rewrite)
+
 
         workflow.add_edge("retrieve", "llm_answer")
         workflow.add_edge("llm_answer", "relevance_check")
         workflow.add_edge("rewrite", "retrieve")
 
+        workflow.add_edge("not_found_in_context", END)
+
+        workflow.add_conditional_edges(
+            "question_checker",
+            self.is_relevant,
+            {
+                "grounded": "retrieve",
+                "notGrounded": END,
+            },
+        )
+        
+        
+        ### Upstage groundeness checker 분기 ###
         workflow.add_conditional_edges(
             "relevance_check",
             self.is_relevant,
             {
                 "grounded": END,
-                "notGrounded": "rewrite",
+                "notGrounded": "not_found_in_context",
                 "notSure": "rewrite",
             },
         )
+        
 
-        workflow.set_entry_point("retrieve")
+        workflow.set_entry_point("question_checker")
 
         return workflow.compile()
 
-    ### 멀티턴? ###
-    # 초기 질문이 법률 관련 질문인지 아닌지 확인하고, 그에 따라서 다른 함수로 넘어감
-    # def llm_answer(self, state: GraphState) -> GraphState:
-    #     if self.is_legal_question(state["question"]):
-    #         answer = self.llm_legal_answer(state)
-    #     else:
-    #         answer = self.llm_non_legal_answer(state)
-    #     return GraphState(answer=answer)
+    
+    # 지금 들어온 질문이 서비스에 맞는 쿼리인지 체크한다.
+    async def question_checker(self, state: GraphState) -> GraphState:
+        session_id = state["session_id"]
+        chat_history = await self.get_chat_history(session_id)
+        prompt = ChatPromptTemplate.from_messages(
+            [
+                (
+                    "system", 
+                    "당신은 고용노동법 관련 질문을 AI 어시스턴트에 연결하는 역할입니다.\n"
+                    "사용자의 질문과 대화 기록을 검토하여 다음과 같이 응답하세요:\n"
+                    "1. 고용복지, 근로기준, 노사관계, 산업안전 등 고용노동법 관련 질문: 'yes'\n"
+                    "2. 고용노동법 외 다른 법률 관련 질문: '고용노동법 관련 질문만 답변 가능합니다.'\n"
+                    "3. 대화 기록과 질문을 종합했을 때 고용노동법과 무관한 일반 질문: 대화 기록을 바탕으로 대답을 하고, 친근하게 '어떤 도움이 필요하신가요?'라고 물어보세요.\n"
+                ),
+                ("system", "Chat History:\n{chat_history}"),
+                ("human", "Question: {question}")
+            ]
+        )
+        chain = prompt | self.checker_model | StrOutputParser()
+        response = await chain.ainvoke({"question": state["question"], "chat_history": chat_history})
+        question_check = "notGrounded"
+        if response == "yes":
+            question_check = "grounded"
+        return GraphState(relevance=question_check, question=state["question"], answer=response)
+
+    def not_found_in_context(self, state: GraphState) -> GraphState:
+        return GraphState(question=state["question"], answer="해당 내용에 대한 정보가 없습니다. 다른 질문을 부탁드립니다.")
+
 
     async def retrieve_document(self, state: GraphState) -> GraphState:
         retrieved_docs = await self.retriever.ainvoke(state["question"])
@@ -109,6 +148,7 @@ class RAGChain:
             relevance=response, question=state["question"], answer=state["answer"]
         )
 
+    ### 쿼리 재작성 노드 ###
     async def rewrite(self, state):
         prompt = ChatPromptTemplate.from_messages(
             [
