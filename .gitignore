@@ -4,6 +4,9 @@
 ### SQLite ###
 **/*.db
 
+### pickle file ###
+*.pkl
+
 ### dotenv ###
 .env
 
