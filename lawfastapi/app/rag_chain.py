@@ -14,15 +14,8 @@ import asyncio
 
 class RAGChain:
     def __init__(self, source_list=None):
-        if source_list is None:
-            self.pdf = PDFRetrievalChain(source_list).create_chain(False)
-        else:
-            print(
-                f"Pinecone의 {StaticVariables.PINECONE_NAMESPACE}에 문서를 저장합니다:\n",
-                source_list,
-            )
-            print("VDB에 중복된 데이터를 넣고 있는 지 확인하세요!")
-            self.pdf = PDFRetrievalChain(source_list).create_chain(True)
+        self.pdf = PDFRetrievalChain(source_list).create_chain()
+        
         self.retriever = self.pdf.retriever
         self.retrieval_chain = self.pdf.chain
         self.checker_model = ChatOpenAI(temperature=0, model=StaticVariables.OPENAI_MODEL)
@@ -186,6 +179,7 @@ class RAGChain:
     def is_relevant(self, state: GraphState) -> GraphState:
         return state["relevance"]
 
+    ### 라우터에서 쓰는 메인함수 ###
     async def process_question(self, question: str, session_id: str):
         inputs = GraphState(question=question, session_id=session_id)
         config = {"configurable": {"session_id": session_id}}
