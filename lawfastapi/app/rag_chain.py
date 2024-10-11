@@ -93,22 +93,27 @@ class RAGChain:
     async def question_checker(self, state: GraphState) -> GraphState:
         session_id = state["session_id"]
         chat_history = await self.get_chat_history(session_id)
+        formatted_history = "\n".join(
+            f"{role}: {message}" for role, message in chat_history
+        )
         prompt = ChatPromptTemplate.from_messages(
             [
                 (
                     "system", 
                     "당신은 고용노동법 관련 질문을 AI 어시스턴트에 연결하는 역할입니다.\n"
-                    "사용자의 질문과 대화 기록을 검토하여 다음과 같이 응답하세요:\n"
+                    "사용자의 질문(Question)과 대화 기록(Chat History)을 검토하여 다음과 같이 응답하세요:\n"
                     "1. 고용복지, 근로기준, 노사관계, 산업안전 등 고용노동법 관련 질문: 'yes'\n"
-                    "2. 고용노동법 외 다른 법률 관련 질문: '고용노동법 관련 질문만 답변 가능합니다.'\n"
-                    "3. 대화 기록과 질문을 종합했을 때 고용노동법과 무관한 일반 질문: 대화 기록을 바탕으로 대답을 하고, 친근하게 '어떤 도움이 필요하신가요?'라고 물어보세요.\n"
+                    "2. 직전 대화가 고용노동법 관련 질문이고, 추가 질문도 맥락상 고용노동법 관련 질문이 될 수 있는 경우(예: '더 자세히', '잘 모르겠어' 등): : 'yes'\n"
+                    "3. 고용노동법 외 다른 법률 관련 질문: 미안함을 표현하며 친근하게 대답을 못하는 이유를 말해주세요.\n"
+                    "4. 고용노동법 외 다른 법률 관련 질문이나 고용노동법과 무관한 일반 질문: 대화 기록(Chat History)기반으로 친근하게 응답하고, 어떤 도움이 필요한 지 질문해 주세요.\n"
+                    "5. 고용노동법과 관련된 계산 질문: 바로 옆에 계산을 잘하는 AI 챗봇이 있으니, 그 쪽에 문의를 해주라는 친절히 답변을 해주세요."
                 ),
-                ("system", "Chat History:\n{chat_history}"),
-                ("human", "Question: {question}")
+                ("system", "# Chat History:\n{chat_history}\n\n"),
+                ("human", "# Question:\n{question}")
             ]
         )
         chain = prompt | self.checker_model | StrOutputParser()
-        response = await chain.ainvoke({"question": state["question"], "chat_history": chat_history})
+        response = await chain.ainvoke({"question": state["question"], "chat_history": formatted_history})
         question_check = "notGrounded"
         if response == "yes":
             question_check = "grounded"
