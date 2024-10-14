@@ -23,7 +23,12 @@ class RAGChain:
 
         self.workflow = self._create_workflow()
         self.db_path = StaticVariables.SQLITE_DB_PATH
-        asyncio.run(self._init_database())
+        
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            loop.create_task(self._init_database())
+        else:
+            asyncio.run(self._init_database())
 
     async def _init_database(self):
         async with aiosqlite.connect(self.db_path) as db:

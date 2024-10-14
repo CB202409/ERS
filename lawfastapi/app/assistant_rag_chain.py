@@ -8,19 +8,29 @@ from langchain_openai import ChatOpenAI
 from langchain_core.output_parsers import StrOutputParser
 from langgraph.graph import END, StateGraph
 from config.static_variables import StaticVariables
+from langchain_experimental.openai_assistant import OpenAIAssistantRunnable
 import aiosqlite
 import asyncio
+from openai import OpenAI
+import time
 
 
 class AssistantRAGChain:
     # source_list는 의미없는 값이니까 신경쓰지마시죠
-    def __init__(self, source_list=None):
+    def __init__(self, client: OpenAI, thread):
         
-        self.checker_model = ChatOpenAI(temperature=0, model=StaticVariables.OPENAI_MODEL)
+        self.checker_model = ChatOpenAI(temperature=0, model="gpt-4o-mini")
 
         self.workflow = self._create_workflow()
         self.db_path = StaticVariables.SQLITE_DB_PATH
-        asyncio.run(self._init_database())
+        self.client = client
+        self.thread = thread
+        
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            loop.create_task(self._init_database())
+        else:
+            asyncio.run(self._init_database())
 
     async def _init_database(self):
         async with aiosqlite.connect(self.db_path) as db:
@@ -38,8 +48,11 @@ class AssistantRAGChain:
     def _create_workflow(self):
         workflow = StateGraph(GraphState)
 
-        workflow.add_node("llm_checker", self.question_checker)  # 어시스턴트에 넘길 지 판단하는 녀석
+        workflow.add_node("question_checker", self.question_checker)  # 어시스턴트에 넘길 지 판단하는 녀석
         workflow.add_node("assistant_llm", self.assistant_llm)  # 전달받은 인자를 통해 계산
+
+
+        workflow.add_edge("assistant_llm", END)
 
         workflow.add_conditional_edges(
             "question_checker",
@@ -50,7 +63,7 @@ class AssistantRAGChain:
             },
         )
 
-        workflow.set_entry_point("retrieve")
+        workflow.set_entry_point("question_checker")
 
         return workflow.compile()
 
@@ -66,8 +79,11 @@ class AssistantRAGChain:
             [
                 (
                     "system", 
-                    "당신은 고용노동법 계산 관련 질문을 AI 어시스턴트에 연결하는 역할입니다.\n"
-                    "사용자의 질문(Question)과 대화 기록(Chat History)을 검토하여 슬 롯 필 링!:\n"
+                    "당신은 고용노동법 관련 계산 질문을 AI 어시스턴트에 연결하는 역할입니다.\n"
+                    "사용자의 질문(Question)과 대화 기록(Chat History)을 검토하여 다음과 같이 응답하세요:\n"
+                    "1. 실업급여, 최저임금, 퇴직금 등 고용노동법 관련 계산 질문: 다른 사족없이 짧게 'yes' 라고 대답하세요.\n"
+                    "2. 고용노동법 외 다른 법률 관련 질문: 미안함을 표현하며 친근하게 대답을 못하는 이유를 말해주세요.\n"
+                    "3. 고용노동법 관련 임금 계산과 무관한 질문: 바로 옆에 법적 자문을 잘하는 AI 챗봇이 있으니, 그 쪽에 문의를 해주라는 친절히 답변을 해주세요."
                 ),
                 ("system", "# Chat History:\n{chat_history}\n\n"),
                 ("human", "# Question:\n{question}")
@@ -80,7 +96,7 @@ class AssistantRAGChain:
             question_check = "grounded"
         return GraphState(relevance=question_check, question=state["question"], answer=response)
 
-
+    
     async def assistant_llm(self, state: GraphState) -> GraphState:
         # TODO: 들어온 세션 아이디로부터 chat_history 로드, chat_history에 저장
         session_id = state["session_id"]
@@ -88,17 +104,62 @@ class AssistantRAGChain:
         formatted_history = "\n".join(
             f"{role}: {message}" for role, message in chat_history
         )
-        # 아래 형태로 실행
-        response = await self.retrieval_chain.ainvoke(
-            {
-                "chat_history": formatted_history,
-                "question": state["question"],
-                "context": state["context"],
-            }
+        
+        assistant_model = self.client.beta.assistants.create(
+            name = "AI-Calculator",
+            instructions = (
+                "무조건 존댓말 해야해. 너는 최저임금만 계산할 수 있어.\n"
+                "코드인터프리터를 이용해서 계산을 해. 근무시간, 주휴수당 등의 요소가 빠져있으면 평균적인 값을 이용하도록 해.\n"
+                "계산을 끝난 후 대답할 때에는 계산을 어떻게 했는지에 대해 설명해주어야 해."
+                "말 끝에는 이모지를 추가해\n"
+                "대답은 아래 대화내용에 맞게 답해야해\n"
+                "# 대화내용\n"
+                f"{formatted_history}\n"
+                "----- 대화내용 끝 -----"
+            ),
+            tools = [{"type": "code_interpreter"}],
+            model = "gpt-4o-mini",            
+            temperature=0.01,
+            top_p=0.95,
         )
-        return GraphState(answer=response)
+        
+        message = self.client.beta.threads.messages.create(
+            thread_id = self.thread.id,
+            role = "user",
+            content = state["question"]
+        )
+        
+        run = self.client.beta.threads.runs.create_and_poll(
+            thread_id = self.thread.id,
+            assistant_id= assistant_model.id
+        )
+
+        timeout = 10
+        elapsed_time = 0
+        
+        while run.status != "completed" and elapsed_time < timeout:
+            time.sleep(1)
+            elapsed_time += 1
+            print("시간경과: ", elapsed_time, "초")
+            run = self.client.beta.threads.runs.poll(run.id)
+        
+        if run.status == "completed":
+            messages = self.client.beta.threads.messages.list(thread_id=self.thread.id)
+
+            latest_message = messages.data[0]
+            
+            for content in latest_message.content:
+                if content.type == "text":
+                    result = content.text.value
+                    print("대답: ", result)
+                    break
+                    
+        
+        return GraphState(answer=result)
 
 
+    def is_relevant(self, state: GraphState) -> GraphState:
+        return state["relevance"]
 
 
     ### AI 진입 포인트로 쓰는 메인함수 ###
