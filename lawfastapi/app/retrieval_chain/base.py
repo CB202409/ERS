@@ -58,40 +58,6 @@ class RetrievalChain(ABC):
         )
         return vectorstore
 
-    def pincone_hybrid_upsert(self, split_docs, namespace):
-        # 파인콘 인덱스 로드
-        pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
-        pc_index = pc.Index(StaticVariables.PINECONE_INDEX_NAME)
-
-        # 문서 전처리
-        contents, metadatas = preprocess_documents(
-            split_docs=split_docs,
-            metadata_keys=["source", "page", "total_pages"],
-            use_basename=True,
-        )
-
-        # sparse 인코더 생성
-        sparse_encoder = create_sparse_encoder(stopwords(), mode="kiwi")
-        saved_path = fit_sparse_encoder(
-            sparse_encoder=sparse_encoder,
-            contents=contents,
-            save_path=StaticVariables.SPARSE_ENCODER_PKL_PATH,
-        )
-        # sparse 인코더 로드(나중에 필요)
-        # sparse_encoder = load_sparse_encoder(StaticVariables.SPARSE_ENCODER_PKL_PATH)
-
-        upstage_embeddings = UpstageEmbeddings(model=StaticVariables.UPSTAGE_EMBEDDING_MODEL)
-
-        upsert_documents_parallel(
-            index=pc_index,
-            namespace=namespace,
-            contents=contents,
-            metadatas=metadatas,
-            sparse_encoder=sparse_encoder,
-            embedder=upstage_embeddings,
-            batch_size=32,
-            max_workers=30,
-        )
 
     def create_hybrid_retriever(self):
         pinecone_params = init_pinecone_index(
@@ -132,18 +98,10 @@ class RetrievalChain(ABC):
     def format_docs(docs):
         return "\n".join(docs)
 
-    def write_pinecone_with_docs(self, source_uri, namespace):
-        docs = self.load_documents(source_uri)
-        text_splitter = self.create_text_splitter()
-        split_docs = self.split_documents(docs, text_splitter)
-        self.pincone_hybrid_upsert(split_docs,namespace)  # 문서 벡터DB에 저장
 
-    def create_chain(self, is_docs_input=False):
+    def create_chain(self):
         self.vectorstore = self.pinecone_load_vectorstore()  # 파인콘 로드
 
-        # 파인콘에 문서 업로드
-        if is_docs_input == True:
-            self.write_pinecone_with_docs(self.source_uri, StaticVariables.PINECONE_NAMESPACE)
 
         # 파인콘 검색기 객체 생성
         self.retriever = self.create_hybrid_retriever()
