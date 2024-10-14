@@ -157,16 +157,17 @@ class RAGChain:
             [
                 (
                     "system",
-                    "You are a professional prompt rewriter. Your task is to generate the question in order to get additional information that is now shown in the context."
-                    "Your generated question will be searched on the web to find relevant information.",
+                    "당신은 전문적인 프롬프트 재작성자입니다. 현재 주어진 맥락에서 드러나지 않은 추가 정보를 얻기 위한 질문을 생성하는 것이 당신의 임무입니다.\n"
+                    "당신이 생성한 질문은 관련 정보를 찾기 위해 우리의 벡터 데이터베이스를 검색하는 데 사용될 것입니다.\n"
+                    "질문은 반드시 한국어로 작성해야 하며, 원래 질문의 의도를 유지하면서 더 구체적이고 정보를 얻기에 적합한 형태여야 합니다.\n"
                 ),
                 (
                     "human",
-                    "Rewrite the question to get additional information to get the answer."
-                    "\n\nHere is the initial question:\n ------- \n{question}\n ------- \n"
-                    "\n\nHere is the initial context:\n ------- \n{context}\n ------- \n"
-                    "\n\nHere is the initial answer to the question:\n ------- \n{answer}\n ------- \n"
-                    "\n\nFormulate an improved question in Korean:",
+                    "다음 정보를 바탕으로 개선된 질문을 만들어주세요:\n"
+                    "원래 질문: {question}\n"
+                    "맥락: {context}\n"
+                    "초기 답변: {answer}\n"
+                    "이를 토대로 추가 정보를 얻기 위한 개선된 질문을 한국어로 작성해주세요."
                 ),
             ]
         )
