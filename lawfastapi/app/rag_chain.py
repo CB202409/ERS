@@ -153,7 +153,7 @@ class RAGChain:
         ragas_result = await self.run_ragas_evaluation(eval_data)
 
         # 평가 점수를 바탕으로 relevance 판단
-        if ragas_result["answer_relevancy"].iloc[0] < 1:
+        if ragas_result["faithfulness"].iloc[0] > 0.6:
             relevance = "grounded"
         else:
             relevance = "notGrounded"
@@ -173,7 +173,10 @@ class RAGChain:
                     "You are a professional prompt rewriter. Your task is to generate the question in order to get additional information that is now shown in the context."
                     "Your generated question will be searched on the web to find relevant information.",
                     "You explain things clearly when answering questions to users.",
-                    "Additionally, if you find material, you will be notified of the source of that material."
+                    "Additionally, if you find material, you will be notified of the source of that material.",
+                    "For example, [The data referred to [Article 1 of the Industrial Safety and Health Act,",
+                    "or Article 1 of the Enforcement Decree of the Industrial Safety and Health Act, or Industrial Safety]",
+
 
                 ),
                 (
@@ -239,7 +242,7 @@ class RAGChain:
                 faithfulness,
                 answer_relevancy,
                 context_precision,
-                context_recall,
+                # context_recall,
             ]
         )
 
