@@ -6,7 +6,7 @@ from langchain_upstage import UpstageGroundednessCheck
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
 from langchain_core.output_parsers import StrOutputParser
-from langgraph.graph import END, StateGraph
+from langgraph.graph import END, START, StateGraph
 from config.static_variables import StaticVariables
 from langchain_experimental.openai_assistant import OpenAIAssistantRunnable
 import aiosqlite
@@ -48,11 +48,12 @@ class AssistantRAGChain:
     def _create_workflow(self):
         workflow = StateGraph(GraphState)
 
+        # 노드 추가
         workflow.add_node("question_checker", self.question_checker)  # 어시스턴트에 넘길 지 판단하는 녀석
         workflow.add_node("assistant_llm", self.assistant_llm)  # 전달받은 인자를 통해 계산
 
-
-        workflow.add_edge("assistant_llm", END)
+        # 노드 연결
+        workflow.add_edge(START, "question_checker")
 
         workflow.add_conditional_edges(
             "question_checker",
@@ -62,8 +63,9 @@ class AssistantRAGChain:
                 "notGrounded": END,
             },
         )
+        
+        workflow.add_edge("assistant_llm", END)
 
-        workflow.set_entry_point("question_checker")
 
         return workflow.compile()
 

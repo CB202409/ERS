@@ -6,7 +6,7 @@ from langchain_upstage import UpstageGroundednessCheck
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
 from langchain_core.output_parsers import StrOutputParser
-from langgraph.graph import END, StateGraph
+from langgraph.graph import END, START, StateGraph
 from config.static_variables import StaticVariables
 import aiosqlite
 import asyncio
@@ -46,6 +46,7 @@ class RAGChain:
     def _create_workflow(self):
         workflow = StateGraph(GraphState)
 
+        # 노드추가
         workflow.add_node("question_checker", self.question_checker)
         workflow.add_node("retrieve", self.retrieve_document)
         workflow.add_node("llm_answer", self.llm_answer)
@@ -54,12 +55,9 @@ class RAGChain:
         workflow.add_node("rewrite", self.rewrite)
 
 
-        workflow.add_edge("retrieve", "llm_answer")
-        workflow.add_edge("llm_answer", "relevance_check")
-        workflow.add_edge("rewrite", "retrieve")
-
-        workflow.add_edge("not_found_in_context", END)
-
+        # 노드 연결
+        workflow.add_edge(START, "question_checker")
+        
         workflow.add_conditional_edges(
             "question_checker",
             self.is_relevant,
@@ -69,6 +67,9 @@ class RAGChain:
             },
         )
         
+        workflow.add_edge("retrieve", "llm_answer")
+        
+        workflow.add_edge("llm_answer", "relevance_check")
         
         ### Upstage groundeness checker 분기 ###
         workflow.add_conditional_edges(
@@ -81,9 +82,11 @@ class RAGChain:
             },
         )
         
+        workflow.add_edge("rewrite", "retrieve")
 
-        workflow.set_entry_point("question_checker")
+        workflow.add_edge("not_found_in_context", END)
 
+        
         return workflow.compile()
 
     
@@ -101,7 +104,7 @@ class RAGChain:
                     "당신은 고용노동법 관련 질문을 AI 어시스턴트에 연결하는 역할입니다.\n"
                     "사용자의 질문(Question)과 대화 기록(Chat History)을 검토하여 다음과 같이 응답하세요:\n"
                     "1. 고용복지, 근로기준, 노사관계, 산업안전 등 고용노동법 관련 질문: 'yes'\n"
-                    "2. 직전 대화가 고용노동법 관련 질문이고, 추가 질문도 맥락상 고용노동법 관련 질문이 될 수 있는 경우(예: '더 자세히', '잘 모르겠어' 등): : 'yes'\n"
+                    "2. 직전 대화가 고용노동법 관련 질문이고, 추가 질문도 맥락상 고용노동법 관련 질문이 될 수 있는 경우('더 자세히', '잘 모르겠어' 등): 'yes'\n"
                     "3. 고용노동법 외 다른 법률 관련 질문: 미안함을 표현하며 친근하게 대답을 못하는 이유를 말해주세요.\n"
                     "4. 고용노동법 외 다른 법률 관련 질문이나 고용노동법과 무관한 일반 질문: 대화 기록(Chat History)기반으로 친근하게 응답하고, 어떤 도움이 필요한 지 질문해 주세요.\n"
                     "5. 고용노동법과 관련된 계산 질문: 바로 옆에 계산을 잘하는 AI 챗봇이 있으니, 그 쪽에 문의를 해주라는 친절히 답변을 해주세요."
@@ -118,7 +121,8 @@ class RAGChain:
         return GraphState(relevance=question_check, question=state["question"], answer=response)
 
     def not_found_in_context(self, state: GraphState) -> GraphState:
-        return GraphState(question=state["question"], answer="해당 내용에 대한 정보가 없습니다. 다른 질문을 부탁드립니다.")
+        # 우리가 건들일 수 있는 부분. 최종적으로 문서를 못찾았을 때!
+        return GraphState(question=state["question"], answer="죄송합니다. 현재 제가 가진 정보로는 말씀하신 내용에 대해 정확한 답변을 드리기 어렵습니다. 혹시 고용노동법과 관련된 다른 궁금하신 점이 있으신가요?")
 
 
     async def retrieve_document(self, state: GraphState) -> GraphState:
