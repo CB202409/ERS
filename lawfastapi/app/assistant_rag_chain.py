@@ -17,14 +17,13 @@ import time
 
 class AssistantRAGChain:
     # source_list는 의미없는 값이니까 신경쓰지마시죠
-    def __init__(self, client: OpenAI, thread):
+    def __init__(self, client: OpenAI):
         
         self.checker_model = ChatOpenAI(temperature=0, model="gpt-4o-mini")
 
         self.workflow = self._create_workflow()
         self.db_path = StaticVariables.SQLITE_DB_PATH
         self.client = client
-        self.thread = thread
         
         loop = asyncio.get_event_loop()
         if loop.is_running():
@@ -100,6 +99,16 @@ class AssistantRAGChain:
 
     
     async def assistant_llm(self, state: GraphState) -> GraphState:
+        # 어시스턴트와 쓰레드가 있는 지 확인
+        try:
+            self.client.beta.assistants.retrieve(assistant_id=StaticVariables.OPENAI_ASSISTANT_ID)
+        except Exception as e:
+            return GraphState(answer="어시스턴트 아이디가 엄서용 . . .")
+        try:
+            self.client.beta.threads.retrieve(thread_id=StaticVariables.OPENAI_THREAD_ID)
+        except Exception as e:
+            return GraphState(answer="쓰레드가 존재하지 안아용 . . .")
+        
         # TODO: 들어온 세션 아이디로부터 chat_history 로드, chat_history에 저장
         session_id = state["session_id"]
         chat_history = await self.get_chat_history(session_id)
@@ -107,8 +116,14 @@ class AssistantRAGChain:
             f"{role}: {message}" for role, message in chat_history
         )
         
-        assistant_model = self.client.beta.assistants.create(
-            name = "AI-Calculator",
+       # 어시스턴트의 설정 업데이트
+        self.client.beta.assistants.update(
+            assistant_id=StaticVariables.OPENAI_ASSISTANT_ID,
+            name = StaticVariables.OPENAI_ASSISTANT_NAME,
+            model = StaticVariables.OPENAI_ASSISTANT_MODEL,            
+            temperature = StaticVariables.OPENAI_ASSISTANT_TEMPERATURE,
+            top_p = StaticVariables.OPENAI_ASSISTANT_TOP_P,
+            tools = [{"type": "code_interpreter"}],
             instructions = (
                 "무조건 존댓말 해야해. 너는 최저임금만 계산할 수 있어.\n"
                 "코드인터프리터를 이용해서 계산을 해. 근무시간, 주휴수당 등의 요소가 빠져있으면 평균적인 값을 이용하도록 해.\n"
@@ -119,23 +134,21 @@ class AssistantRAGChain:
                 f"{formatted_history}\n"
                 "----- 대화내용 끝 -----"
             ),
-            tools = [{"type": "code_interpreter"}],
-            model = "gpt-4o-mini",            
-            temperature=0.01,
-            top_p=0.95,
         )
         
+        # 메시지 추가
         message = self.client.beta.threads.messages.create(
-            thread_id = self.thread.id,
+            thread_id = StaticVariables.OPENAI_THREAD_ID,
             role = "user",
             content = state["question"]
         )
         
+        # 쓰레드 실행
         run = self.client.beta.threads.runs.create_and_poll(
-            thread_id = self.thread.id,
-            assistant_id= assistant_model.id
+            thread_id = StaticVariables.OPENAI_THREAD_ID,
+            assistant_id= StaticVariables.OPENAI_ASSISTANT_ID
         )
-
+        
         timeout = 10
         elapsed_time = 0
         
@@ -146,18 +159,18 @@ class AssistantRAGChain:
             run = self.client.beta.threads.runs.poll(run.id)
         
         if run.status == "completed":
-            messages = self.client.beta.threads.messages.list(thread_id=self.thread.id)
-
-            latest_message = messages.data[0]
+            messages = self.client.beta.threads.messages.list(limit=10 ,thread_id=StaticVariables.OPENAI_THREAD_ID)
             
-            for content in latest_message.content:
-                if content.type == "text":
-                    result = content.text.value
-                    print("대답: ", result)
-                    break
-                    
-        
-        return GraphState(answer=result)
+            result = messages.data[0].content[0].text.value
+            
+            # 메시지삭제
+            self.client.beta.threads.messages.delete(thread_id=StaticVariables.OPENAI_THREAD_ID, message_id=messages.data[0].id)
+            self.client.beta.threads.messages.delete(thread_id=StaticVariables.OPENAI_THREAD_ID, message_id=messages.data[1].id)    
+
+            return GraphState(answer=result)                
+        else:
+            return GraphState(answer="어시스턴트를 돌리는 데 문제가 생긴 것 같네요")
+       
 
 
     def is_relevant(self, state: GraphState) -> GraphState:
