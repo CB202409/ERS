@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
 import Header from "../components/Header";
 import Header2 from "../components/Header2";
-import ChatBot from '../components/ChatBot'; 
+import ChatBot3 from '../components/ChatBot3'; 
 import axios from "axios";
 import { v4 as uuid4 } from "uuid";
 
-const HomeView = () => {
+const Cal = () => {
     const [chatbotMessages, setChatbotMessages] = useState([]);
     const [sessionId, setSessionId] = useState("");
     const [selectedQuestions, setSelectedQuestions] = useState([]); 
@@ -21,7 +21,7 @@ const HomeView = () => {
         setIsAiResponding(true);  // AI 응답 중으로 설정
 
         try {
-            const response = await axios.post("http://localhost:8000/v1/chatbot/advice", {
+            const response = await axios.post("http://localhost:8000/query", {
                 query: msg,
                 session_id: sessionId
             });
@@ -41,7 +41,7 @@ const HomeView = () => {
                 addMessage={addMessage} 
                 isAiResponding={aiResponding}  // AI 응답 중 여부를 전달
             />  
-            <ChatBot 
+            <ChatBot3 
                 chatLog={chatbotMessages} 
                 addMessage={addMessage} 
                 aiResponding={aiResponding} 
@@ -51,4 +51,4 @@ const HomeView = () => {
     );
 };
 
-export default HomeView;
+export default Cal;

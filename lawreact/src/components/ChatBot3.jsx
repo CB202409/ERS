@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { TypeAnimation } from 'react-type-animation';
-import { GiWolfHowl } from "react-icons/gi"; 
-import { FiCopy } from "react-icons/fi"; 
+import { GiWolfHowl } from "react-icons/gi"; // 아이콘 import
 
-const ChatBot = ({ chatLog, addMessage, aiResponding, setIsAiResponding }) => {
+const ChatBot3 = ({ chatLog, addMessage, aiResponding, setIsAiResponding }) => {
     const [userInput, setUserInput] = useState("");
     const chatLogRef = useRef(null);
     const [isUserScrolling, setIsUserScrolling] = useState(false);
@@ -35,20 +34,12 @@ const ChatBot = ({ chatLog, addMessage, aiResponding, setIsAiResponding }) => {
         }
     }, [chatLog, isUserScrolling]);
 
+    // 애니메이션이 끝나면 상태 업데이트
     const handleAnimationEnd = (index) => {
         setAnimationEnded(prev => ({
             ...prev,
             [index]: true  // 해당 메시지의 애니메이션이 끝난 상태로 설정
         }));
-    };
-
-    // 메시지 복사
-    const handleCopyMessage = (message) => {
-        navigator.clipboard.writeText(message).then(() => {
-            alert("메시지가 복사되었습니다!"); 
-        }).catch(() => {
-            alert("복사실패.");
-        });
     };
 
     return (
@@ -71,14 +62,9 @@ const ChatBot = ({ chatLog, addMessage, aiResponding, setIsAiResponding }) => {
                                 ) : (
                                     <span>{msg.message}</span>  // 애니메이션이 끝나면 정적인 텍스트로 표시
                                 )}
-                                <FiCopy 
-                                    size={16} 
-                                    style={{ marginLeft: '8px', cursor: 'pointer' }} 
-                                    onClick={() => handleCopyMessage(msg.message)} 
-                                    title="메시지 복사" 
-                                />
                             </div>
                         )}
+                        {/* 사용자 메시지는 그대로 */}
                         {msg.sender === "사용자" && (
                             <span>{msg.message}</span>
                         )}
@@ -101,4 +87,4 @@ const ChatBot = ({ chatLog, addMessage, aiResponding, setIsAiResponding }) => {
     );
 };
 
-export default ChatBot;
+export default ChatBot3;
