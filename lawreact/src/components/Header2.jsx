@@ -13,7 +13,6 @@ const Header2 = ({ setFilteredQuestions, addMessage, isAiResponding }) => {
         "Home2 관련 질문 2"
     ];
 
-    // 검색 입력 핸들러
     const handleSearchInputChange = (event) => {
         const query = event.target.value.toLowerCase();
         setSearchTerm(query);
@@ -24,14 +23,13 @@ const Header2 = ({ setFilteredQuestions, addMessage, isAiResponding }) => {
         setFilteredResults(filtered);
     };
 
-    // 질문 클릭 핸들러
     const handleResultClick = (question) => {
-        if (!isAiResponding) {  // AI 응답 중이 아닐 때만 질문 전송 가능
-            addMessage(question);  // 질문을 ChatBot에 전송
-            setFilteredResults([]);  // 질문 전송 후 검색 결과 초기화
-            setSearchTerm("");  // 입력 필드 초기화
+        if (!isAiResponding) {
+            addMessage(question);  // 질문을 ChatBot으로 전달
+            setFilteredResults([]);
+            setSearchTerm("");
         } else {
-            alert("AI가 응답 중입니다. 응답이 끝난 후에 질문할 수 있습니다.");  // 응답 중일 때 경고
+            alert("AI가 응답 중입니다. 응답이 끝난 후에 질문할 수 있습니다.");
         }
     };
 
@@ -44,7 +42,7 @@ const Header2 = ({ setFilteredQuestions, addMessage, isAiResponding }) => {
                         placeholder="키워드 질문 예)실업 해고 퇴직"
                         value={searchTerm}
                         onChange={handleSearchInputChange}
-                        disabled={isAiResponding}  // AI 응답 중일 때 검색 입력 금지
+                        disabled={isAiResponding}
                     />
                 </div>
             </header>

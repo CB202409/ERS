@@ -19,6 +19,7 @@ const App = () => {
         setShowLogoScreen(false);
         localStorage.setItem('lastVisitTime', Date.now().toString());
       }, 1500); // 1.5초 동안 로고 화면 표시
+      return () => clearTimeout(timer);
     } else {
       setShowLogoScreen(false);
     }

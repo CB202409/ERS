@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const axios = require('axios');
-require('dotenv').config(); // 환경 변수 로드
+require('dotenv').config();  // 환경 변수 로드
 
 const app = express();
 const PORT = 5000;
@@ -10,16 +10,16 @@ const PORT = 5000;
 app.use(cors());
 app.use(bodyParser.json());
 
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY; // 환경 변수에서 API 키 가져오기
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;  //API 가져오기
 
-// OpenAI API와 통신하는 엔드포인트
 app.post('/chat', async (req, res) => {
-    const userMessage = req.body.message;
+    const { query, session_id } = req.body;  // 클라이언트에서 받은 query와 session_id
+    console.log(`Received message: ${query}, session_id: ${session_id}`);
 
     try {
         const response = await axios.post('https://api.openai.com/v1/chat/completions', {
-            model: 'gpt-3.5-turbo', // 모델 이름 변경
-            messages: [{ role: 'user', content: userMessage }],
+            model: 'gpt-3.5-turbo',
+            messages: [{ role: 'user', content: query }],  // query 값 전송
             max_tokens: 150,
             temperature: 0.9,
         }, {
