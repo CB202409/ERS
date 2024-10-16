@@ -1,14 +1,10 @@
 import aiosqlite.context
-from retrieval_chain.pdf import PDFRetrievalChain
-from retrieval_chain.utils import format_docs
 from schema.graph_state import GraphState
-from langchain_upstage import UpstageGroundednessCheck
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
 from langchain_core.output_parsers import StrOutputParser
 from langgraph.graph import END, START, StateGraph
 from config.static_variables import StaticVariables
-from langchain_experimental.openai_assistant import OpenAIAssistantRunnable
 import aiosqlite
 import asyncio
 from openai import OpenAI
@@ -103,11 +99,11 @@ class AssistantRAGChain:
         try:
             self.client.beta.assistants.retrieve(assistant_id=StaticVariables.OPENAI_ASSISTANT_ID)
         except Exception as e:
-            return GraphState(answer="어시스턴트 아이디가 엄서용 . . .")
+            return GraphState(answer="지금은 이용할 수 없습니다.")
         try:
             self.client.beta.threads.retrieve(thread_id=StaticVariables.OPENAI_THREAD_ID)
         except Exception as e:
-            return GraphState(answer="쓰레드가 존재하지 안아용 . . .")
+            return GraphState(answer="지금은 이용할 수 없습니다.")
         
         # TODO: 들어온 세션 아이디로부터 chat_history 로드, chat_history에 저장
         session_id = state["session_id"]
@@ -125,15 +121,60 @@ class AssistantRAGChain:
             top_p = StaticVariables.OPENAI_ASSISTANT_TOP_P,
             tools = [{"type": "code_interpreter"}],
             instructions = (
-                "무조건 존댓말 해야해. 너는 최저임금만 계산할 수 있어.\n"
-                "코드인터프리터를 이용해서 계산을 해. 근무시간, 주휴수당 등의 요소가 빠져있으면 평균적인 값을 이용하도록 해.\n"
-                "계산을 끝난 후 대답할 때에는 계산을 어떻게 했는지에 대해 설명해주어야 해."
-                "말 끝에는 이모지를 추가해\n"
-                "대답은 아래 대화내용에 맞게 답해야해\n"
+                "당신은 실업급여 계산, 퇴직금 계산, 그리고 최저임금 위반 판별을 도와주는 전문가 AI 어시스턴트입니다.\n"
+                "항상 존댓말을 사용하세요.\n"
+                "코드 인터프리터를 이용하여 계산을 수행하세요. 누락된 정보가 있다면 일반적인 값을 이용하세요.\n"
+                "계산이 끝난 후에는 계산 과정과 결과를 상세히 설명해주어야 합니다.\n"
+                "현재 대한민국의 최저임금은 시간당 9,860원입니다.\n" 
+                "오늘은 2024년 10월 16일입니다.\n" 
+                "대답의 말미에는 적절한 이모지를 추가하세요.\n\n"
+    
+                "실업급여 계산 규칙:\n"
+                "1. 사용자가 제공하는 최근 3개월 임금, 고용보험 가입 기간, 연령, 장애 여부 정보를 정확히 파악합니다.\n"
+                "2. 현행 고용보험법에 따라 평균임금을 정확히 계산합니다. 평균임금 = (최근 3개월 동안의 총 임금) / 해당 기간의 실제 일수. 3개월 동안의 각 달에 맞는 정확한 일수를 사용하여 총 일수를 계산합니다.\n"
+                "3. 1일 실업급여 수급액은 퇴직 전 3개월간의 1일 평균임금의 60%이며, 상한액(최대)은 66,000원, 하한액(최소)은 63,104원입니다. \n"
+                "4. 고용보험 가입 기간과 연령에 따른 수급일수를 정확히 산정합니다. 기준은 다음과 같습니다:\n"
+                "   - 1년 미만: 120일\n"
+                "   - 1년 이상 3년 미만: 150일\n"
+                "   - 3년 이상 5년 미만: 180일\n"
+                "   - 5년 이상 10년 미만: 210일\n"
+                "   - 10년 이상: 240일\n"
+                "   - 연령이 50세 이상이거나 장애인인 경우에는 각각 30일 추가\n"
+                "5. 총 실업급여 금액을 일일 실업급여와 수급일수를 곱하여 계산합니다.\n"
+                "6. 실업급여 계산 결과를 평균임금, 일일 실업급여, 수급일수, 총액으로 명확히 설명합니다.\n"
+                "7. 실업급여 관련 법규와 수급 권리, 신청 절차에 대해 상세히 안내합니다.\n"
+                "8. 특수한 상황(50세 이상, 장애인 등)에서의 추가 수급일수를 고려하여 정확히 계산합니다.\n"
+                "9. 사용자의 질문에 따라 실업급여 계산 과정을 상세히 설명합니다.\n"
+                "10. 실업급여 수급 중 주의사항 및 재취업 시 처리 방법에 대해 안내합니다.\n\n"
+                
+                "퇴직금 계산 규칙:\n"
+                "1. 사용자가 제공하는 근속 기간, 평균 임금 정보를 정확히 파악합니다.\n"
+                "2. 현행 대한민국의 근로기준법에 따라 퇴직금을 정확히 계산합니다.\n"
+                "3. 퇴직금 계산 결과를 명확히 설명합니다.\n"
+                "4. 퇴직금 관련 법규와 권리에 대해 안내합니다.\n"
+                "5. 복잡한 상황에서의 퇴직금 계산을 정확히 수행합니다.\n\n"
+                
+                "최저임금 계산 규칙:\n"
+                "1. 사용자가 제공하는 근무 시간, 급여 정보를 정확히 파악합니다.\n"
+                "2. 대한민국 법에 따른 법정 주휴수당을 자동으로 계산하여 고려합니다.\n"
+                "3. 위반 사항이 있다면 그 내용을 명확히 설명하고, 적절한 조치를 제안합니다.\n"
+                "4. 복잡한 상황에서의 최저임금 준수 여부를 정확히 판단합니다.\n"
+                "5. 월급제, 일급제, 시급제 등 다양한 임금 지급 형태를 고려하여 계산합니다.\n"
+                "6. 5인 초과 사업장은 연장근로수당, 야간근로수당, 휴일근로수당 등 가산수당을 고려합니다.\n"
+                "7. 최저임금 산입범위에 포함되는 임금과 제외되는 임금을 구분하여 계산합니다.\n"
+                "8. 수습 기간 중 근로자의 경우, 최저임금의 90%를 적용할 수 있음을 고려합니다.\n"
+                "9. 근로시간 특례업종 및 감시단속적 근로자 등 특수한 경우를 고려합니다.\n"
+                
+                "각 서비스에 대한 상세한 대화 가이드라인, 주의사항, 복잡한 상황 고려사항 등을 숙지하고 있어야 합니다.\n"
+                "법적 조언을 제공하는 것이 아님을 명시하고, 필요시 전문가 상담을 권유하세요.\n"
+                "개인정보 보호에 항상 유의하세요.\n\n"
+                
+                "대답은 아래 대화내용에 맞게 답해야 합니다:\n"
+                "없으면 신경쓰지 않아도 됩니다.\n"
                 "# 대화내용\n"
                 f"{formatted_history}\n"
                 "----- 대화내용 끝 -----"
-            ),
+                ),
         )
         
         # 메시지 추가
@@ -159,17 +200,21 @@ class AssistantRAGChain:
             run = self.client.beta.threads.runs.poll(run.id)
         
         if run.status == "completed":
-            messages = self.client.beta.threads.messages.list(limit=10 ,thread_id=StaticVariables.OPENAI_THREAD_ID)
+            messages_data = self.client.beta.threads.messages.list(thread_id=StaticVariables.OPENAI_THREAD_ID).data
             
-            result = messages.data[0].content[0].text.value
+            result = messages_data[0].content[0].text.value
             
-            # 메시지삭제
-            self.client.beta.threads.messages.delete(thread_id=StaticVariables.OPENAI_THREAD_ID, message_id=messages.data[0].id)
-            self.client.beta.threads.messages.delete(thread_id=StaticVariables.OPENAI_THREAD_ID, message_id=messages.data[1].id)    
-
+            # 메시지삭제(쓰레드 비우기)
+            try:
+                messages_count = len(messages_data)
+                for idx in range(0, messages_count):
+                    self.client.beta.threads.messages.delete(thread_id=StaticVariables.OPENAI_THREAD_ID, message_id=messages_data[idx].id)
+            except Exception as e:
+                print("메시지를 지우는 데 문제가 발생했습니다.: ", e)
+            
             return GraphState(answer=result)                
         else:
-            return GraphState(answer="어시스턴트를 돌리는 데 문제가 생긴 것 같네요")
+            return GraphState(answer="문제가 발생했습니다. 잠시 후 다시 이용해주세요.")
        
 
 
