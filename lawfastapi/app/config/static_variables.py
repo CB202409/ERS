@@ -23,10 +23,10 @@ class StaticVariables:
     SQLITE_DB_PATH = "./db/chat_history.db"
     
     # OpenAI 어시스턴트용
-    OPENAI_ASSISTANT_MODEL = "gpt-4o-mini"
-    OPENAI_ASSISTANT_NAME = "AI-CALCULATOR"
-    OPENAI_ASSISTANT_ID = "asst_48fzSTQ5jlLOIChEjUoXVpCe"
+    OPENAI_ASSISTANT_MODEL = "gpt-4o"
+    OPENAI_ASSISTANT_NAME = "계산"
+    OPENAI_ASSISTANT_ID = "asst_2DyKo0eGyav2JL7JAH31TrbH"
     OPENAI_ASSISTANT_TEMPERATURE = 0.01
     OPENAI_ASSISTANT_TOP_P = 0.95
     
-    OPENAI_THREAD_ID = "thread_0FzQl5htjXBt63ZOA0uCfTyn"
+    OPENAI_THREAD_ID = "thread_3SIL0gL4BIhm9rRx6Q3L26N1"
