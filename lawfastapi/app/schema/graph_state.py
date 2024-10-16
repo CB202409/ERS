@@ -7,6 +7,7 @@ class GraphState(TypedDict):
     answer: str
     relevance: str
     session_id: str
+    is_rewrite: bool
 
 class QueryRequest(BaseModel):
     query: str
