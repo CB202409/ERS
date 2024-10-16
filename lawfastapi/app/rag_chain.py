@@ -15,10 +15,9 @@ import asyncio
 
 class RAGChain:
     def __init__(self, source_list=None):
-        self.pdf = PDFRetrievalChain(source_list).create_chain()
+        self.pdf = PDFRetrievalChain(source_list)
 
-        self.retriever = self.pdf.retriever
-        self.retrieval_chain = self.pdf.chain
+        self.retriever = self.pdf.create_retriever().retriever
         self.checker_model = ChatOpenAI(
             temperature=0, model=StaticVariables.OPENAI_MODEL
         )
@@ -144,7 +143,8 @@ class RAGChain:
         formatted_history = "\n".join(
             f"{role}: {message}" for role, message in chat_history
         )
-        response = await self.retrieval_chain.ainvoke(
+        chain = self.pdf.create_chain(state["is_expert"])
+        response = await chain.ainvoke(
             {
                 "chat_history": formatted_history,
                 "question": state["question"],
@@ -205,10 +205,10 @@ class RAGChain:
         self,
         question: str,
         session_id: str,
-        is_rewrite: bool = False,
+        is_expert: bool = False
     ):
         inputs = GraphState(
-            question=question, session_id=session_id, is_rewrite=is_rewrite
+            question=question, session_id=session_id, is_rewrite=False, is_expert=is_expert
         )
         config = RunnableConfig(
             recursion_limit=20, configurable={"session_id": session_id}

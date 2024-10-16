@@ -10,10 +10,6 @@ from langchain.prompts import ChatPromptTemplate
 # 파인콘
 from langchain_teddynote.korean import stopwords
 from langchain_teddynote.community.pinecone import (
-    create_sparse_encoder,
-    fit_sparse_encoder,
-    preprocess_documents,
-    upsert_documents_parallel,
     init_pinecone_index,
     PineconeKiwiHybridRetriever,
 )
@@ -78,14 +74,26 @@ class RetrievalChain(ABC):
     def create_model(self):
         return ChatOpenAI(model_name=StaticVariables.OPENAI_MODEL, temperature=0)
 
-    def create_prompt(self):
+    def create_prompt(self, is_expert: bool = False):
+        
+        if is_expert == True:
+            system_prompt = (
+                "당신은 질문-답변(Question-Answering)을 수행하는 법률 전문 AI Assistant입니다. 주어진 문맥(context)과 대화 기록(chat history)을 바탕으로 주어진 질문(question)에 답하세요.\n"
+                "다음 지침을 엄격히 따라주세요:\n"
+                "1. 만약 법률 전문가인지 묻는다면 '예 맞아요' 라고 하세요.\n"
+            )
+        else:
+            system_prompt = (
+                "당신은 질문-답변(Question-Answering)을 수행하는 법률 전문 AI Assistant입니다. 주어진 문맥(context)과 대화 기록(chat history)을 바탕으로 주어진 질문(question)에 답하세요.\n"
+                "다음 지침을 엄격히 따라주세요:\n"
+                "1. 만약 법률 전문가인지 묻는다면 '아뇨 저는 요약 전문 봇이에요' 라고 하세요.\n"
+            )
+        
         prompt = ChatPromptTemplate.from_messages(
             [
                 (
                     "system", 
-                    "당신은 질문-답변(Question-Answering)을 수행하는 법률 전문 AI Assistant입니다. 주어진 문맥(context)과 대화 기록(chat history)을 바탕으로 주어진 질문(question)에 답하세요.\n"
-                    "다음 지침을 엄격히 따라주세요:\n"
-                    "1. 검색된 문맥(context)과 대화 기록(chat history)을 신중히 분석하여 질문(question)에 답하세요.\n"
+                    system_prompt
                 ),
                 ("system", "Chat History:\n{chat_history}"),
                 ("system", "Context:\n{context}"),
@@ -99,16 +107,17 @@ class RetrievalChain(ABC):
         return "\n".join(docs)
 
 
-    def create_chain(self):
+    def create_retriever(self):
         self.vectorstore = self.pinecone_load_vectorstore()  # 파인콘 로드
-
 
         # 파인콘 검색기 객체 생성
         self.retriever = self.create_hybrid_retriever()
+        return self
 
+    def create_chain(self, is_expert: bool = False):
         model = self.create_model()
-        prompt = self.create_prompt()
-        self.chain = (
+        prompt = self.create_prompt(is_expert)
+        chain = (
             {
                 "chat_history": itemgetter("chat_history"),
                 "question": itemgetter("question"),
@@ -118,4 +127,4 @@ class RetrievalChain(ABC):
             | model
             | StrOutputParser()
         )
-        return self
+        return chain

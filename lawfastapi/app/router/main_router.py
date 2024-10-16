@@ -20,7 +20,7 @@ router = APIRouter()
 
 @router.post("/v1/chatbot/advice", response_model=QueryResponse)
 async def handle_query(request: QueryRequest):
-    result = await rag_chain.process_question(request.query, request.session_id)
+    result = await rag_chain.process_question(request.query, request.session_id, request.is_expert)
     if result:
         return QueryResponse(answer=result["answer"])
     else:

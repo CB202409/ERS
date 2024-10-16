@@ -7,11 +7,13 @@ class GraphState(TypedDict):
     answer: str
     relevance: str
     session_id: str
+    is_expert: bool
     is_rewrite: bool
 
 class QueryRequest(BaseModel):
     query: str
     session_id: str
+    is_expert: bool = False
 
 class QueryResponse(BaseModel):
     answer: str
