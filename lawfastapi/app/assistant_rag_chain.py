@@ -1,14 +1,10 @@
 import aiosqlite.context
-from retrieval_chain.pdf import PDFRetrievalChain
-from retrieval_chain.utils import format_docs
 from schema.graph_state import GraphState
-from langchain_upstage import UpstageGroundednessCheck
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
 from langchain_core.output_parsers import StrOutputParser
 from langgraph.graph import END, START, StateGraph
 from config.static_variables import StaticVariables
-from langchain_experimental.openai_assistant import OpenAIAssistantRunnable
 import aiosqlite
 import asyncio
 from openai import OpenAI
@@ -103,11 +99,11 @@ class AssistantRAGChain:
         try:
             self.client.beta.assistants.retrieve(assistant_id=StaticVariables.OPENAI_ASSISTANT_ID)
         except Exception as e:
-            return GraphState(answer="어시스턴트 아이디가 엄서용 . . .")
+            return GraphState(answer="지금은 이용할 수 없습니다.")
         try:
             self.client.beta.threads.retrieve(thread_id=StaticVariables.OPENAI_THREAD_ID)
         except Exception as e:
-            return GraphState(answer="쓰레드가 존재하지 안아용 . . .")
+            return GraphState(answer="지금은 이용할 수 없습니다.")
         
         # TODO: 들어온 세션 아이디로부터 chat_history 로드, chat_history에 저장
         session_id = state["session_id"]
@@ -169,6 +165,7 @@ class AssistantRAGChain:
                 "8. 수습 기간 중 근로자의 경우, 최저임금의 90%를 적용할 수 있음을 고려합니다.\n"
                 "9. 근로시간 특례업종 및 감시단속적 근로자 등 특수한 경우를 고려합니다.\n\n"
 
+
                 
                 "각 서비스에 대한 상세한 대화 가이드라인, 주의사항, 복잡한 상황 고려사항 등을 숙지하고 있어야 합니다.\n"
                 "법적 조언을 제공하는 것이 아님을 명시하고, 필요시 전문가 상담을 권유하세요.\n"
@@ -183,6 +180,7 @@ class AssistantRAGChain:
                 "모든 답변은 다음 형식을 따라야 합니다: \n"
                 "요약:[계산 과정 및 계산 결과의 간단한 요약] \n"
                 "결과:[지정된 형식에 따른 최종 결과] \n\n"
+
                 ),
         )
         
@@ -209,17 +207,21 @@ class AssistantRAGChain:
             run = self.client.beta.threads.runs.poll(run.id)
         
         if run.status == "completed":
-            messages = self.client.beta.threads.messages.list(limit=10 ,thread_id=StaticVariables.OPENAI_THREAD_ID)
+            messages_data = self.client.beta.threads.messages.list(thread_id=StaticVariables.OPENAI_THREAD_ID).data
             
-            result = messages.data[0].content[0].text.value
+            result = messages_data[0].content[0].text.value
             
-            # 메시지삭제
-            self.client.beta.threads.messages.delete(thread_id=StaticVariables.OPENAI_THREAD_ID, message_id=messages.data[0].id)
-            self.client.beta.threads.messages.delete(thread_id=StaticVariables.OPENAI_THREAD_ID, message_id=messages.data[1].id)    
-
+            # 메시지삭제(쓰레드 비우기)
+            try:
+                messages_count = len(messages_data)
+                for idx in range(0, messages_count):
+                    self.client.beta.threads.messages.delete(thread_id=StaticVariables.OPENAI_THREAD_ID, message_id=messages_data[idx].id)
+            except Exception as e:
+                print("메시지를 지우는 데 문제가 발생했습니다.: ", e)
+            
             return GraphState(answer=result)                
         else:
-            return GraphState(answer="어시스턴트를 돌리는 데 문제가 생긴 것 같네요")
+            return GraphState(answer="문제가 발생했습니다. 잠시 후 다시 이용해주세요.")
        
 
 

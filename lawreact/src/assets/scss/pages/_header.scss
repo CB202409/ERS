@@ -1,77 +1,82 @@
-#header {
+.header {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100%;
+  background-color: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+
+  &__inner {
     display: flex;
-    flex-direction: column; // 자식 요소들을 세로 방향으로 배치
-    align-items: center; // 자식 요소들을 중앙에 정렬
-    padding: 10px; // 상하좌우 
-    //background-color:;
-  
-    h1 {
-      margin-bottom: 60px; // h1태그 하단 여백
-    }
-  
-    nav {
-      .nav-buttons {
-        display: flex; // 가로 정렬
-        justify-content: center; // 중앙정렬
-        gap: 30px; //20px 간격
-        list-style-type: none; // ul 요소의 기본리스트 스타일 제거
-        padding: 0; // ul 안쪽 여백제거
-  
-        li {
-          button {
-            background-color: #fafafa;
-            border: none; // 버튼 테두리
-            padding: 10px 20px;
-            border-radius: 5px; // 버튼 모소리 둥글게 만들기
-            cursor: pointer; // 포인트 모양 출력
-            transition: background-color 0.3s ease; // 배경색 변화 부드럽게 출력
-  
-            a { 
-              color: white;
-              text-decoration: none; // 링크 기본 밑줄 제거
-            }
-  
-            &:hover {
-              background-color: #e1ebe2; // 마우스를 버튼 위에 올렸을때 발생하는 스타일
-            }
-          }
-        }
-      }
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  &__logo {
+    font-size: 0.5rem;
+    font-weight: bold;
+
+    a {
+      text-decoration: none;
+      color: #333;
     }
   }
-  @media (max-width:768px){
-    #header{
-      padding:10px;
-    }
-    h1{
-      margin-bottom:30px;
-    }
-    nav{
-      .nav-buttons{
-        gap:15px;
 
-        li{
-          button{
-            width:100%;
-            padding:15px;
-            font-size: 10px;
-          }
-        }
+  &__nav {
+    ul {
+      display: flex;
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    li {
+      margin-left: 1.5rem;
+    }
+
+    a {
+      text-decoration: none;
+      color: #333;
+      display: flex;
+      align-items: center;
+      transition: color 0.3s ease;
+
+      &:hover {
+        color: #007bff;
+      }
+
+      .anticon {
+        margin-right: 0.3rem;
       }
     }
   }
 
-  @media (max-width:480px){
-    #header{
-      h1{
-        font-size: 30px;
+  @media (max-width: 768px) {
+    &__logo {
+      display: none;
+    }
+
+    &__nav {
+      width: 90%;
+      
+      ul {
+        justify-content: space-between; /* 기능들을 균등하게 배치 */
+        width: 100%; 
+        padding: 0 1rem; 
       }
 
-      nav{
-        .nav-buttons{
-          gap:20px;
-        }
+      li {
+        margin-left: 0; /* li 요소 간 간격 제거 */
+      }
+
+      a {
+        justify-content: center; /* 텍스트와 아이콘을 중앙에 정렬 */
       }
     }
   }
-  
+}

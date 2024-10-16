@@ -1,0 +1,123 @@
+$transition-duration: 0.3s;
+$overlay-color: rgba(0, 0, 0, 0);  // 기본 오버레이 색상 설정
+
+@mixin flex-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+@mixin background-cover($size: 50%) {
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: $size;
+}
+
+.selection-container {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  padding: 0;
+  margin: 0;
+  flex-wrap: nowrap;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+  }
+}
+
+.section {
+  flex: 1 1 33.33%; 
+  @include flex-center;
+  @include background-cover(70%); 
+  cursor: pointer;
+  transition: all $transition-duration ease-in-out;
+  position: relative;
+  height: 100%;
+  color: rgb(0, 0, 0);
+  flex-direction: column; 
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(to bottom, $overlay-color, rgba(0, 0, 0, 0.8));
+    opacity: 1;
+    transition: opacity $transition-duration ease-in-out;
+  }
+
+  &:hover::before {
+    opacity: 0;
+  }
+
+  .content {
+    position: relative;
+    @include flex-center;
+    flex-direction: column;
+    text-align: center;
+    padding: 1rem;
+    z-index: 1;
+    color: white;
+    margin-top: auto; 
+
+    h1 {
+      font-size: 2rem;
+      margin-top: 1rem;
+    }
+
+    .icon {
+      width: 4rem;
+      height: 4rem;
+      margin-bottom: 1rem;
+      transition: transform $transition-duration ease-in-out;
+    }
+
+    h2 {
+      font-size: 1.5rem;
+      font-weight: bold;
+      margin-bottom: 0.5rem;
+      transition: transform $transition-duration ease-in-out;
+    }
+
+    p {
+      max-width: 15rem;
+      font-size: 0.875rem;
+      opacity: 0;
+      transition: opacity $transition-duration ease-in-out;
+    }
+  }
+}
+
+.easy {
+  background-image: url('/img/littletree.jpg'); 
+}
+
+.hard {
+  background-image: url('/img/tree.jpg');
+}
+
+.cal {
+  background-image: url('/img/light.jpg'); 
+}
+
+/* 모바일에서 overlay-color 제거 */
+@media (max-width: 768px) {
+  .section {
+    flex: 1 1 100%;
+    
+    &::before {
+      background: none;  
+    }
+  }
+
+  h2 {
+    font-size: 2rem;
+  }
+
+  p {
+    font-size: 1rem;
+  }
+}
