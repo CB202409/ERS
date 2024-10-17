@@ -1,85 +1,50 @@
-import React, { useEffect, useState } from "react";
-import Comant1 from './Comant1';
-import Comant2 from './Cal'; 
-import Comant3 from './Comant3'; 
-import ChatBot from './ChatBot'; 
-import axios from "axios"; 
-import { v4 as uuid4 } from "uuid";
-
-const headerNav = [
-    {
-        title: "ChatBot",
-        url: "#Comant1",
-        toggle: true
-    },
-    {
-        title: "Cal",
-        url: "#Cal",
-        toggle: true
-    },
-    {
-        title: "기능3",
-        url: "#Comant3",
-        toggle: true
-    }
-];
+import React from "react";
+import { useLocation } from "react-router-dom";
+import { AppstoreOutlined } from "@ant-design/icons";
 
 const Header = () => {
-    const [activeComponent, setActiveComponent] = useState(null); 
-    const [chatbotVisible, setChatbotVisible] = useState(false);
-    const [chatbotMessages, setChatbotMessages] = useState([]);
-
-    // 페이지 로드 시 세션 생성
-    const [sessionId, setSessionId] = useState("");
-
-    useEffect(() => {setSessionId(uuid4())}, []);
-
-    const handleToggleComponent = (component) => {
-        setActiveComponent(prev => (prev === component ? null : component)); 
-        if (component === "ChatBot") {
-            setChatbotVisible(true);
-        } else {
-            setChatbotVisible(false);
+    const location = useLocation();
+    
+    const headerNav = [
+        {
+            title: "chat",
+            url: "home",
+            icon: <AppstoreOutlined />
+        },
+        // {
+        //     title: "자문",
+        //     url: "home2",
+        //     icon: <AppstoreOutlined />
+        // },
+        {
+            title: "계산",
+            url: "Cal",
+            icon: <AppstoreOutlined />
         }
-    };
-
-    const sendMessageToChatbot = async (msg) => {
-        setChatbotMessages(prevMessages => [...prevMessages, { sender: "사용자", message: msg }]);
-
-        try {
-            console.log("로드중...");
-            const response = await axios.post("http://localhost:8000/query", {
-                query: msg,
-                session_id: sessionId
-            });
-            console.log("로드완료!");
-            setChatbotMessages(prevMessages => [...prevMessages, { sender: "AI", message: response.data.answer }]);
-        } catch (error) {
-            console.error("Error:", error);
-            setChatbotMessages(prevMessages => [...prevMessages, { sender: "AI", message: "서버에 문제가 발생했습니다." }]);
-        }
-    };
+    ];
 
     return (
-        <header id="header" role="banner">
-            <h1>팀이름</h1>
-            <nav>
-                <ul className="nav-buttons">
-                    {headerNav.map((item, index) => (
-                        item.toggle && (
+        <header className="header">
+            <div className="header__inner">
+                <div className="header__logo">
+                    <a href="/">
+                        <h1>HomeLex</h1>
+                    </a>
+                </div>
+
+                <nav className="header__nav">
+                    <ul>
+                        {headerNav.map((item, index) => (
                             <li key={index}>
-                                <button onClick={() => handleToggleComponent(item.title)}>
-                                    {item.title}
-                                </button>
+                                <a href={item.url}>
+                                    {item.icon}
+                                    <span>{item.title}</span>
+                                </a>
                             </li>
-                        )
-                    ))}
-                </ul>
-            </nav>
-            {activeComponent === "ChatBot" && <Comant1 sendMessage={sendMessageToChatbot} />}
-            {activeComponent === "Cal" && <Comant2 show={activeComponent === "Cal"} />} 
-            {activeComponent === "기능3" && <Comant3 />}
-            {chatbotVisible && <ChatBot chatLog={chatbotMessages} addMessage={sendMessageToChatbot} />}
+                        ))}
+                    </ul>
+                </nav>
+            </div>
         </header>
     );
 };

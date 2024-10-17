@@ -12,6 +12,7 @@ app.use(bodyParser.json());
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY; // 환경 변수에서 API 키 가져오기
 
+// OpenAI API와 통신하는 엔드포인트
 app.post('/chat', async (req, res) => {
     const userMessage = req.body.message;
 

@@ -1,9 +1,7 @@
-# upload_pinecone.py
-
 # 임베딩, 전처리
 from langchain_upstage import UpstageEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.document_loaders import PDFPlumberLoader, TextLoader
+from langchain_community.document_loaders import PDFPlumberLoader
 
 # 파인콘
 from langchain_teddynote.korean import stopwords
@@ -27,29 +25,18 @@ sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 
 from app.config.static_variables import StaticVariables
 
+
 # .env 로드
 from dotenv import load_dotenv
 
 load_dotenv()
 
 
-def load_documents(source_uris: List[str]):
-    """
-    주어진 파일 경로 목록에서 PDF와 TXT 파일을 로드합니다.
-    """
+def load_PDF_documents(source_uris: List[str]):
     docs = []
     for source_uri in source_uris:
-        _, file_extension = os.path.splitext(source_uri)
-        file_extension = file_extension.lower()
-        if file_extension == ".pdf":
-            loader = PDFPlumberLoader(source_uri)
-        elif file_extension == ".txt":
-            loader = TextLoader(source_uri, encoding='utf-8')
-        else:
-            print(f"지원하지 않는 파일 형식: {source_uri}")
-            continue
-        loaded_docs = loader.load()
-        docs.extend(loaded_docs)
+        loader = PDFPlumberLoader(source_uri)
+        docs.extend(loader.load())
     return docs
 
 
@@ -128,7 +115,7 @@ def list_files_with_paths(directory):
 
 def write_pinecone_with_docs(source_uri, namespace):
     sources = list_files_with_paths(source_uri)
-    docs = load_documents(sources)  # PDF와 TXT 모두 로드
+    docs = load_PDF_documents(sources)
     text_splitter = create_text_splitter()
     split_docs = split_documents(docs, text_splitter)
     pincone_hybrid_upsert(split_docs, namespace)  # 문서 벡터DB에 저장
@@ -143,28 +130,28 @@ if __name__ == "__main__":
         print("필요한 Index가 존재하지 않습니다. 새로운 Index를 생성합니다: ", StaticVariables.PINECONE_INDEX_NAME)
         pc.create_index(
             name=StaticVariables.PINECONE_INDEX_NAME,
-            dimension=4096,  # Replace with your model dimensions
-            metric="dotproduct",  # Replace with your model metric
+            dimension=4096, # Replace with your model dimensions
+            metric="dotproduct", # Replace with your model metric
             spec=ServerlessSpec(
                 cloud="aws",
                 region="us-east-1"
-            )
+            ) 
         )
         print("Index 생성 완료!")
-
+        
     print("PINECONE Index를 로드합니다...")
     while not pc.describe_index(StaticVariables.PINECONE_INDEX_NAME).status['ready']:
         time.sleep(1)
     index = pc.Index(StaticVariables.PINECONE_INDEX_NAME)
     print("Index 로드 완료!")
-
+    
     print("Index 내 namespace 중복여부를 확인합니다: ", StaticVariables.PINECONE_NAMESPACE)
     existing_namespaces = index.describe_index_stats()['namespaces']
     if StaticVariables.PINECONE_NAMESPACE in existing_namespaces:
         print("중복된 namespace가 존재합니다. namespace를 삭제합니다.")
         index.delete(namespace=StaticVariables.PINECONE_NAMESPACE, delete_all=True)
         print("중복된 namespace 삭제 완료!")
-
+        
     print("namespace에 데이터를 저장합니다.")
     write_pinecone_with_docs(
         StaticVariables.PDF_DIRECTORY_PATH, StaticVariables.PINECONE_NAMESPACE

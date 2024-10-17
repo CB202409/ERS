@@ -1,0 +1,86 @@
+.header2 {
+    position: fixed;
+    top: 100px; 
+    width: 100%;
+    background-color: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); 
+    z-index: 999;
+    padding: 5px 0;
+
+    &__inner {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 1.5rem;
+
+        .search-container {
+            display: flex;
+            width: 100%;
+            max-width: 700px;
+
+            input {
+                flex-grow: 1;
+                padding: 15px;
+                border-radius: 6px;
+                border: 1px solid #ccc;
+                font-size: 16px;
+            }
+        }
+    }
+
+    &__search-results {
+        margin-top: 0px;
+        width: 100%;
+        max-width: 700px;
+        background-color: #fff;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+        list-style: none;
+        padding: 0;
+        margin: 0 auto;
+
+        li {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+
+            &:hover {
+                background-color: #f0f0f0;
+            }
+
+            &:last-child {
+                border-bottom: none;
+            }
+        }
+    }
+
+    @media (max-width: 768px) {
+        top: 50px;
+  
+        &__inner {
+            padding: 1rem;
+
+            .search-container {
+                width: 100%; 
+                max-width: 700px; /* 모바일에서도 크기를 유지 */
+
+                input {
+                    width: 100%;
+                    padding: 8px;
+                    border-radius: 6px; /* 모든 모서리에 적용 */
+                    border: 1px solid #ccc; /* border-right 다시 추가 */
+                    font-size: 14px; /* 모바일에서 텍스트 크기 더 줄임 */
+                }
+            }
+        }
+
+        &__search-results {
+            max-width: 100%; 
+            margin-left: auto; 
+            margin-right: auto;
+        }
+    }
+}
