@@ -6,13 +6,13 @@ class StaticVariables:
     # 임베딩 설정
     UPSTAGE_EMBEDDING_MODEL = "embedding-passage"
     UPSTAGE_RETRIEVE_MODEL = "embedding-query"
-    CHUNK_SIZE = 300
-    CHUNK_OVERLAP = 23
+    CHUNK_SIZE = 730
+    CHUNK_OVERLAP = 60 
 
     
     # Retrieval
-    RETRIEVAL_K = 20  # Top-K 문서 반환 개수
-    RETRIEVAL_ALPHA = 0.5  # alpha=0.75로 설정한 경우, (0.75: Dense Embedding, 0.25: Sparse Embedding)
+    RETRIEVAL_K = 15  # Top-K 문서 반환 개수
+    RETRIEVAL_ALPHA = 0.42  # alpha=0.75로 설정한 경우, (0.75: Dense Embedding, 0.25: Sparse Embedding)
     
     # pinecone
     PINECONE_INDEX_NAME = "law-pdf"
