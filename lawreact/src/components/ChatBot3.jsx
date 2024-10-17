@@ -1,23 +1,90 @@
 import React, { useState, useEffect, useRef } from "react";
 import { TypeAnimation } from 'react-type-animation';
-import { GiWolfHowl } from "react-icons/gi"; // 아이콘 import
+import { GiWolfHowl } from "react-icons/gi"; 
+import { FiCopy } from "react-icons/fi"; 
+import { AiOutlineReload } from "react-icons/ai";  
+import { v4 as uuidv4 } from 'uuid';  
+import { marked } from 'marked';  
 
-const ChatBot3 = ({ chatLog, addMessage, aiResponding, setIsAiResponding }) => {
-    const [userInput, setUserInput] = useState("");
+const ChatBot3 = ({ addMessage, aiResponding, setIsAiResponding, externalMessage }) => {
     const chatLogRef = useRef(null);
+    const [userInput, setUserInput] = useState("");
     const [isUserScrolling, setIsUserScrolling] = useState(false);
     const [animationEnded, setAnimationEnded] = useState({});
+    const [chatLog, setChatLog] = useState(() => {
+        const storedChatLog = JSON.parse(localStorage.getItem('chatLog'));
+        return storedChatLog || [];  
+    });
 
-    const handleFormSubmit = (e) => {
+    const getSessionId = () => {
+        let sessionId = localStorage.getItem('session_id');
+        if (!sessionId) {
+            sessionId = uuidv4(); 
+            localStorage.setItem('session_id', sessionId);  // localStorage 저장
+        }
+        return sessionId;
+    };
+
+    const [sessionId, setSessionId] = useState(getSessionId());  // session_id 설정
+
+    useEffect(() => {
+        if (chatLog.length === 0) {
+            const welcomeMessage = {
+                sender: "AI",
+                message: "무엇을 도와드릴까요? 정해진 질문이 없으시다면 검색 기능을 이용하세요"
+            };
+            setChatLog([welcomeMessage]);
+        }
+    }, []);
+
+    useEffect(() => {
+        localStorage.setItem('chatLog', JSON.stringify(chatLog));
+    }, [chatLog]);
+
+    useEffect(() => {
+        if (externalMessage) {
+            handleExternalMessage(externalMessage);
+        }
+    }, [externalMessage]);
+
+    const handleExternalMessage = async (message) => {
+        if (!aiResponding) {
+            const messageData = {
+                query: message,
+                session_id: sessionId  
+            };
+
+            setChatLog((prevChatLog) => [...prevChatLog, { sender: "사용자", message }]);
+
+            setIsAiResponding(true);
+
+            try {
+                const response = await fetch('http://localhost:8000/v1/chatbot/calculator' /* 실제 API로 변경 */, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(messageData)
+                });
+
+                const data = await response.json();
+
+                setChatLog((prevChatLog) => [...prevChatLog, { sender: "AI", message: data.response }]);
+
+            } catch (error) {
+                setChatLog((prevChatLog) => [...prevChatLog, { sender: "AI", message: "서버에 문제가 발생했습니다." }]);
+                console.error('Error calling the server:', error);
+            }
+
+            setIsAiResponding(false);
+        }
+    };
+
+    const handleFormSubmit = async (e) => {
         e.preventDefault();
         if (userInput.trim() && !aiResponding) {
-            addMessage(userInput); // 사용자 메시지 전송
-            setUserInput(""); // 입력창 초기화
-            setIsAiResponding(true);  // AI 응답 중으로 설정
-
-            setTimeout(() => {
-                setIsAiResponding(false);  // 2초 후 응답 완료 상태로 설정
-            }, 2000);
+            await handleExternalMessage(userInput);
+            setUserInput("");  
         }
     };
 
@@ -34,12 +101,45 @@ const ChatBot3 = ({ chatLog, addMessage, aiResponding, setIsAiResponding }) => {
         }
     }, [chatLog, isUserScrolling]);
 
-    // 애니메이션이 끝나면 상태 업데이트
     const handleAnimationEnd = (index) => {
         setAnimationEnded(prev => ({
             ...prev,
-            [index]: true  // 해당 메시지의 애니메이션이 끝난 상태로 설정
+            [index]: true 
         }));
+    };
+
+    const handleCopyMessage = (message) => {
+        navigator.clipboard.writeText(message).then(() => {
+            alert("메시지가 복사되었습니다!"); 
+        }).catch(() => {
+            alert("복사에 실패했습니다.");
+        });
+    };
+
+    const handleNewChat = () => {
+        const newSessionId = uuidv4();
+        setSessionId(newSessionId);
+        const welcomeMessage = {
+            sender: "AI",
+            message: "무엇을 도와드릴까요? 정해진 질문이 없으시다면 검색 기능을 이용하세요"
+        };  
+        setChatLog([welcomeMessage]);  
+        localStorage.setItem('session_id', newSessionId);  
+        localStorage.removeItem('chatLog');  
+    };
+
+    const getMarkdownContent = (message) => {
+        return { __html: marked(message) };  // Markdown을 HTML로 변환
+    };
+
+    const handleKeyDown = (e) => {
+        if (e.key === "Enter" && e.ctrlKey) {
+            e.preventDefault();  // 기본 Enter 동작 방지
+            handleFormSubmit(e);  // 메시지 전송
+        } else if (e.key === "Enter" && !e.ctrlKey) {
+            e.preventDefault();  // 기본 Enter 동작 방지
+            setUserInput(userInput + "\n");  // 줄바꿈 추가
+        }
     };
 
     return (
@@ -49,40 +149,53 @@ const ChatBot3 = ({ chatLog, addMessage, aiResponding, setIsAiResponding }) => {
                     <div key={index} className={msg.sender === "사용자" ? "user-message" : "ai-message"}>
                         {msg.sender === "AI" && (
                             <div style={{ display: 'flex', alignItems: 'center' }}>
-                                <GiWolfHowl size={24} style={{ marginRight: '8px' }} /> {/* AI 아이콘 */}
+                                <GiWolfHowl size={24} style={{ marginRight: '8px' }} />
                                 {!animationEnded[index] ? (
                                     <TypeAnimation
-                                        sequence={[msg.message, 1000]}  // 애니메이션 적용
-                                        speed={50}
+                                        sequence={[msg.message, 1000]}
+                                        speed={70}
                                         style={{ fontSize: '1em' }}
                                         repeat={1}
-                                        cursor={false}  // 깜빡이는 커서를 비활성화
-                                        onFinished={() => handleAnimationEnd(index)}  // 애니메이션 완료 후 호출
+                                        cursor={false}
+                                        onFinished={() => handleAnimationEnd(index)}
                                     />
                                 ) : (
-                                    <span>{msg.message}</span>  // 애니메이션이 끝나면 정적인 텍스트로 표시
+                                    <span dangerouslySetInnerHTML={getMarkdownContent(msg.message)} />
                                 )}
+                                <FiCopy
+                                    size={16}
+                                    style={{ marginLeft: '8px', cursor: 'pointer' }}
+                                    onClick={() => handleCopyMessage(msg.message)}
+                                    title="메시지 복사"
+                                />
                             </div>
                         )}
-                        {/* 사용자 메시지는 그대로 */}
                         {msg.sender === "사용자" && (
-                            <span>{msg.message}</span>
+                            <span dangerouslySetInnerHTML={getMarkdownContent(msg.query || msg.message)} />
                         )}
                     </div>
                 ))}
-                {aiResponding && (
-                    <div className="spinner"></div>
-                )}
+                {aiResponding && <div className="spinner"></div>}
             </div>
             <form onSubmit={handleFormSubmit}>
+                <AiOutlineReload
+                    size={20}
+                    onClick={handleNewChat}
+                    style={{ cursor: 'pointer', marginRight: '10px' }}
+                    title="새 채팅 시작"
+                />
                 <textarea
                     value={userInput}
+                    onKeyDown={handleKeyDown}
                     onChange={(e) => setUserInput(e.target.value)}
                     placeholder="메시지를 입력하세요"
-                    disabled={aiResponding}  // AI 응답 중일 때 비활성화
+                    disabled={aiResponding}
                 />
                 <button type="submit" disabled={aiResponding}>전송</button>
             </form>
+            <div className="word">
+                <small>법적 책임 안 짐</small>
+            </div>
         </div>
     );
 };

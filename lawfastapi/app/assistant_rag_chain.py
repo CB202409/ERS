@@ -8,6 +8,7 @@ from config.static_variables import StaticVariables
 import aiosqlite
 import asyncio
 from openai import OpenAI
+from dotenv import load_dotenv
 import time
 
 
@@ -15,7 +16,7 @@ class AssistantRAGChain:
     # source_list는 의미없는 값이니까 신경쓰지마시죠
     def __init__(self, client: OpenAI):
         
-        self.checker_model = ChatOpenAI(temperature=0, model="gpt-4o-mini")
+        self.checker_model = ChatOpenAI(temperature=0, model=StaticVariables.OPENAI_ASSISTANT_CHECKER_MODEL)
 
         self.workflow = self._create_workflow()
         self.db_path = StaticVariables.SQLITE_DB_PATH

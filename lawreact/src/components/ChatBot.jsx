@@ -2,7 +2,9 @@ import React, { useState, useEffect, useRef } from "react";
 import { TypeAnimation } from 'react-type-animation';
 import { GiWolfHowl } from "react-icons/gi"; 
 import { FiCopy } from "react-icons/fi"; 
+import { AiOutlineReload } from "react-icons/ai";  
 import { v4 as uuidv4 } from 'uuid';  
+import { marked } from 'marked';  
 
 const ChatBot = ({ addMessage, aiResponding, setIsAiResponding, externalMessage }) => {
     const chatLogRef = useRef(null);
@@ -10,13 +12,12 @@ const ChatBot = ({ addMessage, aiResponding, setIsAiResponding, externalMessage 
     const [isUserScrolling, setIsUserScrolling] = useState(false);
     const [animationEnded, setAnimationEnded] = useState({});
     const [chatLog, setChatLog] = useState(() => {
-
-        // 컴포넌트가 처음 마운트될 때 localStorage에서 chatLog를 불러옴
         const storedChatLog = JSON.parse(localStorage.getItem('chatLog'));
         return storedChatLog || [];  
     });
 
-    // session_id를 localStorage에서 불러오거나 새로 생성
+    const [isExpert , setIsExpert] = useState(false); //false 기본값 
+
     const getSessionId = () => {
         let sessionId = localStorage.getItem('session_id');
         if (!sessionId) {
@@ -26,14 +27,22 @@ const ChatBot = ({ addMessage, aiResponding, setIsAiResponding, externalMessage 
         return sessionId;
     };
 
-    const sessionId = getSessionId();  // session_id 설정
+    const [sessionId, setSessionId] = useState(getSessionId());  // session_id 설정
 
-    // chatLog localStorage 저장
+    useEffect(() => {
+        if (chatLog.length === 0) {
+            const welcomeMessage = {
+                sender: "AI",
+                message: "무엇을 도와드릴까요? 정해진 질문이 없으시다면 키워드 질문을 이용하세요"
+            };
+            setChatLog([welcomeMessage]);
+        }
+    }, []);
+
     useEffect(() => {
         localStorage.setItem('chatLog', JSON.stringify(chatLog));
-    }, [chatLog]);  // chatLog가 변경될 때마다 실행
+    }, [chatLog]);
 
-    // 외부 메시지 받을 때마다 처리
     useEffect(() => {
         if (externalMessage) {
             handleExternalMessage(externalMessage);
@@ -43,8 +52,9 @@ const ChatBot = ({ addMessage, aiResponding, setIsAiResponding, externalMessage 
     const handleExternalMessage = async (message) => {
         if (!aiResponding) {
             const messageData = {
-                query: message,  // 외부에서 받은 메시지
-                session_id: sessionId  // session_id
+                query: message,
+                session_id: sessionId,
+                is_expert: isExpert
             };
 
             setChatLog((prevChatLog) => [...prevChatLog, { sender: "사용자", message }]);
@@ -52,7 +62,9 @@ const ChatBot = ({ addMessage, aiResponding, setIsAiResponding, externalMessage 
             setIsAiResponding(true);
 
             try {
-                const response = await fetch('http://localhost:5000/chat', {
+                console.log("is_expert 값:", messageData.is_expert);
+
+                const response = await fetch('http://localhost:8000/v1/chatbot/advice' /* 실제 API로 변경 */, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -109,6 +121,37 @@ const ChatBot = ({ addMessage, aiResponding, setIsAiResponding, externalMessage 
         });
     };
 
+    const handleNewChat = () => {
+        const newSessionId = uuidv4();
+        setSessionId(newSessionId);  
+        const welcomeMessage = {
+            sender: "AI",
+            message: "무엇을 도와드릴까요? 정해진 질문이 없으시다면 키워드 질문을 이용하세요"
+        };
+        setChatLog([welcomeMessage]); 
+        localStorage.setItem('session_id', newSessionId);  
+        localStorage.removeItem('chatLog');  
+    };
+
+    const getMarkdownContent = (message) => {
+        return { __html: marked(message) };  // Markdown을 HTML로 변환
+    };
+
+    const handleKeyDown = (e) => {
+        if (e.key === "Enter" && e.ctrlKey) {
+            e.preventDefault();  // 기본 Enter 동작 방지
+            handleFormSubmit(e);  // 메시지 전송
+        } else if (e.key === "Enter" && !e.ctrlKey) {
+            e.preventDefault();  // 기본 Enter 동작 방지
+            setUserInput(userInput + "\n");  // 줄바꿈 추가
+        }
+    };
+
+    const toggleExpertMode = () => {
+        setIsExpert(!isExpert);
+        console.log("더 궁금해요 상태:", !isExpert);
+    };
+
     return (
         <div id="Chatbot">
             <div id="chat-log" ref={chatLogRef} onScroll={handleScroll}>
@@ -116,45 +159,65 @@ const ChatBot = ({ addMessage, aiResponding, setIsAiResponding, externalMessage 
                     <div key={index} className={msg.sender === "사용자" ? "user-message" : "ai-message"}>
                         {msg.sender === "AI" && (
                             <div style={{ display: 'flex', alignItems: 'center' }}>
-                                <GiWolfHowl size={24} style={{ marginRight: '8px' }} /> 
+                                <GiWolfHowl size={24} style={{ marginRight: '8px' }} />
                                 {!animationEnded[index] ? (
                                     <TypeAnimation
                                         sequence={[msg.message, 1000]}
-                                        speed={50}
+                                        speed={70} // 타이핑 속도
                                         style={{ fontSize: '1em' }}
                                         repeat={1}
                                         cursor={false}
                                         onFinished={() => handleAnimationEnd(index)}
                                     />
                                 ) : (
-                                    <span>{msg.message}</span>
+                                    <span dangerouslySetInnerHTML={getMarkdownContent(msg.message)} />
                                 )}
-                                <FiCopy 
-                                    size={16} 
-                                    style={{ marginLeft: '8px', cursor: 'pointer' }} 
-                                    onClick={() => handleCopyMessage(msg.message)} 
-                                    title="메시지 복사" 
+                                <FiCopy
+                                    size={16}
+                                    style={{ marginLeft: '8px', cursor: 'pointer' }}
+                                    onClick={() => handleCopyMessage(msg.message)}
+                                    title="메시지 복사"
                                 />
                             </div>
                         )}
                         {msg.sender === "사용자" && (
-                            <span>{msg.query || msg.message}</span>
+                            <span dangerouslySetInnerHTML={getMarkdownContent(msg.query || msg.message)} />
                         )}
                     </div>
                 ))}
-                {aiResponding && (
-                    <div className="spinner"></div>
-                )}
+                {aiResponding && <div className="spinner"></div>}
             </div>
             <form onSubmit={handleFormSubmit}>
+                <AiOutlineReload
+                    size={20}
+                    onClick={handleNewChat}
+                    style={{ cursor: 'pointer', marginRight: '10px' }}
+                    title="새 채팅 시작"
+                />
                 <textarea
-                    value={userInput}
-                    onChange={(e) => setUserInput(e.target.value)}
-                    placeholder="메시지를 입력하세요"
-                    disabled={aiResponding}
+                     value={userInput}
+                     onKeyDown={handleKeyDown}
+                     onChange={(e) => setUserInput(e.target.value)}
+                     placeholder="메시지를 입력하세요"
+                     disabled={aiResponding}
                 />
                 <button type="submit" disabled={aiResponding}>전송</button>
             </form>
+
+            <div className ="expert-toggle">
+                <label>
+                    <input
+                        type="checkbox"
+                        checked={isExpert}
+                        onChange={toggleExpertMode}
+                    />
+                    <span>더 궁금해요{isExpert ? 'On' : 'OFF'}</span>
+                </label>
+            </div>
+
+            <div className="word">
+                <small>법적 책임 안 짐</small>
+            </div>
         </div>
     );
 };
