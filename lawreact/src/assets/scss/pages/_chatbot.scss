@@ -118,8 +118,11 @@
         appearance: none;
         width: 40px;
         height: 20px;
-        background-color: #ccc;
-        border-radius: 20px;
+        background-color: #ddd;
+        border-radius: 25px;
+        position: relative;
+        outline: none;
+        cursor: pointer;
         transition: background-color 0.3s ease;
 
         &::before {

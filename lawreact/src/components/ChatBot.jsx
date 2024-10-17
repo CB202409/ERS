@@ -216,7 +216,7 @@ const ChatBot = ({ addMessage, aiResponding, setIsAiResponding, externalMessage 
             </div>
 
             <div className="word">
-                <small>법적 책임 안 짐</small>
+                <small>AI 기반의 서비스로 이용 시 예상하지 못한 피해가 발생할 수 있으니, 대답을 한 번 더 확인하세요.</small>
             </div>
         </div>
     );
