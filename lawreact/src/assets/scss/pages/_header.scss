@@ -47,11 +47,72 @@
       transition: color 0.3s ease;
 
       &:hover {
-        color: #007bff;
+        color: #000000;
+      }
+
+      .nav-icon {
+        font-size: 1.5rem;
+        margin-right: 0.3rem;
       }
 
       .anticon {
-        margin-right: 0.3rem;
+        margin-right: 0.5rem;
+      }
+    }
+  }
+
+  .search-container {
+    margin-top: 0.5rem;
+    margin-bottom: 0.6rem;
+    text-align: center;
+    position: relative; /* 부모 기준 정렬 */
+
+    input {
+      padding: 0.8rem;
+      border: 1px solid #ddd;
+      border-radius: 20px;
+      width: 100%; /* 부모 너비에 맞춤 */
+      max-width: 500px;
+      transition: box-shadow 0.3s ease;
+
+      &:focus {
+        box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
+        outline: none;
+      }
+    }
+
+    .search-results {
+      position: absolute; /* 부모 기준 정렬 */
+      top: calc(100% + 0.5rem); /* 입력창 아래에 배치 */
+      left: 50%; /* 부모의 가운데로 이동 */
+      transform: translateX(-50%); /* 가운데 정렬 */
+      width: 100%; /* 부모와 동일한 너비 */
+      max-width: 500px;
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      max-height: 300px;
+      overflow-y: auto;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      background-color: white;
+      transition: all 0.3s ease-in-out;
+
+      li {
+        cursor: pointer;
+        padding: 1rem;
+        background-color: white;
+        border-bottom: 1px solid #f0f0f0;
+        transition: background-color 0.3s ease, transform 0.1s ease-in-out;
+
+        &:hover {
+          background-color: #f9f9f9;
+          transform: translateX(5px); /* 살짝 오른쪽 이동 */
+        }
+
+        &:last-child {
+          border-bottom: none;
+        }
       }
     }
   }
@@ -63,19 +124,37 @@
 
     &__nav {
       width: 90%;
-      
+
       ul {
-        justify-content: space-between; /* 기능들을 균등하게 배치 */
-        width: 100%; 
-        padding: 0 1rem; 
+        justify-content: space-between; 
+        width: 100%;
+        padding: 0 1rem;
       }
 
       li {
-        margin-left: 0; /* li 요소 간 간격 제거 */
+        margin-left: 0;
       }
 
       a {
-        justify-content: center; /* 텍스트와 아이콘을 중앙에 정렬 */
+        justify-content: center;
+      }
+    }
+
+    .search-container {
+      input {
+        width: 80%; 
+      }
+
+      .search-results {
+        max-height: 200px; 
+        width: 80%; 
+        left: 50%;
+        transform: translateX(-50%); 
+
+        li {
+          padding: 0.8rem;
+          font-size: 0.9rem;
+        }
       }
     }
   }
