@@ -1,37 +1,52 @@
-.logo-container {
-  display: flex;
-  flex-direction: column; /* 이미지를 위에, 텍스트를 아래에 배치 */
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  background-color: #ffffff;
-  position: fixed;
-  top: 50%;  
-  left: 50%;
-  transform: translate(-50%, -50%); 
-}
-
-.logo {
-  width: 300px;
-  opacity: 0;
-  animation: fadeInScale 1.5s forwards;
-}
-
-.logo-text {
-  margin-top: 10px; 
-  font-size: 24px;
-  font-weight: bold;
-  opacity: 1;
-  animation: fadeInScale 1.5s forwards; 
-}
-
-@keyframes fadeInScale {
-  0% {
+:root {
+    --logo-bg: #ffffff;
+    --logo-text: #000000;
+  }
+  
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --logo-bg: #1a1a1a;
+      --logo-text: #ffffff;
+    }
+  }
+  
+  .logo-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: var(--logo-bg);
+    position: fixed;
+    top: 50%;  
+    left: 50%;
+    transform: translate(-50%, -50%); 
+    transition: background-color 0.3s ease;
+  }
+  
+  .logo {
+    width: 300px;
     opacity: 0;
-    transform: scale(0.8);
+    animation: fadeInScale 1.5s forwards;
   }
-  100% {
-    opacity: 1;
-    transform: scale(1);
+  
+  .logo-text {
+    margin-top: 10px; 
+    font-size: 24px;
+    font-weight: bold;
+    color: var(--logo-text);
+    opacity: 0;
+    animation: fadeInScale 1.5s forwards; 
+    transition: color 0.3s ease;
   }
-}
+  
+  @keyframes fadeInScale {
+    0% {
+      opacity: 0;
+      transform: scale(0.8);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
