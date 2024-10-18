@@ -1,9 +1,10 @@
 class StaticVariables:
     # AI모델
-    OPENAI_MODEL = "gpt-4o-mini"
-    REWRITE_MODEL = "gpt-4o-mini"
-    OPENAI_ASSISTANT_CHECKER_MODEL = "gpt-4o-mini"
-    OPENAI_ASSISTANT_MODEL = "gpt-4o-mini"
+    OPENAI_MODEL = "gpt-4o"
+    REWRITE_MODEL = "gpt-4o"
+    OPENAI_ASSISTANT_CHECKER_MODEL = "gpt-4o"
+    OPENAI_ASSISTANT_MODEL = "gpt-4o"
+    GROUNDEDNESS_CHECK_MODEL = "gpt-4o"
     
     # 임베딩 설정
     UPSTAGE_EMBEDDING_MODEL = "embedding-passage"

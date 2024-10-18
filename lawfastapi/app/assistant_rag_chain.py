@@ -10,6 +10,7 @@ import asyncio
 from openai import OpenAI
 from dotenv import load_dotenv
 import time
+import os
 
 
 class AssistantRAGChain:
@@ -98,11 +99,11 @@ class AssistantRAGChain:
     async def assistant_llm(self, state: GraphState) -> GraphState:
         # 어시스턴트와 쓰레드가 있는 지 확인
         try:
-            self.client.beta.assistants.retrieve(assistant_id=StaticVariables.OPENAI_ASSISTANT_ID)
+            self.client.beta.assistants.retrieve(assistant_id=os.environ["OPENAI_ASSISTANT_ID"])
         except Exception as e:
             return GraphState(answer="지금은 이용할 수 없습니다.")
         try:
-            self.client.beta.threads.retrieve(thread_id=StaticVariables.OPENAI_THREAD_ID)
+            self.client.beta.threads.retrieve(thread_id=os.environ["OPENAI_THREAD_ID"])
         except Exception as e:
             return GraphState(answer="지금은 이용할 수 없습니다.")
         
@@ -115,7 +116,7 @@ class AssistantRAGChain:
         
        # 어시스턴트의 설정 업데이트
         self.client.beta.assistants.update(
-            assistant_id=StaticVariables.OPENAI_ASSISTANT_ID,
+            assistant_id=os.environ["OPENAI_ASSISTANT_ID"],
             name = StaticVariables.OPENAI_ASSISTANT_NAME,
             model = StaticVariables.OPENAI_ASSISTANT_MODEL,            
             temperature = StaticVariables.OPENAI_ASSISTANT_TEMPERATURE,
@@ -261,15 +262,15 @@ class AssistantRAGChain:
         
         # 메시지 추가
         message = self.client.beta.threads.messages.create(
-            thread_id = StaticVariables.OPENAI_THREAD_ID,
+            thread_id = os.environ["OPENAI_THREAD_ID"],
             role = "user",
             content = state["question"]
         )
         
         # 쓰레드 실행
         run = self.client.beta.threads.runs.create_and_poll(
-            thread_id = StaticVariables.OPENAI_THREAD_ID,
-            assistant_id= StaticVariables.OPENAI_ASSISTANT_ID
+            thread_id = os.environ["OPENAI_THREAD_ID"],
+            assistant_id= os.environ["OPENAI_ASSISTANT_ID"]
         )
         
         timeout = 10
@@ -282,7 +283,7 @@ class AssistantRAGChain:
             run = self.client.beta.threads.runs.poll(run.id)
         
         if run.status == "completed":
-            messages_data = self.client.beta.threads.messages.list(thread_id=StaticVariables.OPENAI_THREAD_ID).data
+            messages_data = self.client.beta.threads.messages.list(thread_id=os.environ["OPENAI_THREAD_ID"]).data
             
             result = messages_data[0].content[0].text.value
             
@@ -290,7 +291,7 @@ class AssistantRAGChain:
             try:
                 messages_count = len(messages_data)
                 for idx in range(0, messages_count):
-                    self.client.beta.threads.messages.delete(thread_id=StaticVariables.OPENAI_THREAD_ID, message_id=messages_data[idx].id)
+                    self.client.beta.threads.messages.delete(thread_id=os.environ["OPENAI_THREAD_ID"], message_id=messages_data[idx].id)
             except Exception as e:
                 print("메시지를 지우는 데 문제가 발생했습니다.: ", e)
             
@@ -326,8 +327,8 @@ class AssistantRAGChain:
                 (session_id,),
             ) as cursors:
                 result = await cursors.fetchall()
-                for node in result:
-                    print(f"node: {node}")
+                # for node in result:
+                #     print(f"node: {node}")
         return result
 
     async def update_chat_history(self, session_id: str, question: str, answer: str):
