@@ -1,7 +1,9 @@
 class StaticVariables:
     # AI모델
-    OPENAI_MODEL = "gpt-4o"
-    REWRITE_MODEL = "gpt-4o"
+    OPENAI_MODEL = "gpt-4o-mini"
+    REWRITE_MODEL = "gpt-4o-mini"
+    OPENAI_ASSISTANT_CHECKER_MODEL = "gpt-4o-mini"
+    OPENAI_ASSISTANT_MODEL = "gpt-4o-mini"
     
     # 임베딩 설정
     UPSTAGE_EMBEDDING_MODEL = "embedding-passage"
@@ -26,8 +28,6 @@ class StaticVariables:
     SQLITE_DB_PATH = "./db/chat_history.db"
     
     # OpenAI 어시스턴트용
-    OPENAI_ASSISTANT_CHECKER_MODEL = "gpt-4o-mini"
-    OPENAI_ASSISTANT_MODEL = "gpt-4o"
     OPENAI_ASSISTANT_NAME = "계산"
     OPENAI_ASSISTANT_TEMPERATURE = 0.01
     OPENAI_ASSISTANT_TOP_P = 0.95

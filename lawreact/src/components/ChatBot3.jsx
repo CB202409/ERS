@@ -69,7 +69,7 @@ const ChatBot3 = ({ addMessage, aiResponding, setIsAiResponding, externalMessage
 
                 const data = await response.json();
 
-                setChatLog((prevChatLog) => [...prevChatLog, { sender: "AI", message: data.response }]);
+                setChatLog((prevChatLog) => [...prevChatLog, { sender: "AI", message: data.answer }]);
 
             } catch (error) {
                 setChatLog((prevChatLog) => [...prevChatLog, { sender: "AI", message: "서버에 문제가 발생했습니다." }]);
@@ -201,3 +201,4 @@ const ChatBot3 = ({ addMessage, aiResponding, setIsAiResponding, externalMessage
 };
 
 export default ChatBot3;
+                <small>법적 책임 안 짐</small>
