@@ -155,11 +155,37 @@ class RAGChain:
         return state
 
     async def relevance_check(self, state: GraphState) -> GraphState:
-        response = await self.upstage_ground_checker.arun(
-            {"context": state["context"], "answer": state["answer"]}
-        )
+        # response = await self.upstage_ground_checker.arun(
+        #     {"context": state["context"], "answer": state["answer"]}
+        # )
+        
+        # prompt = ChatPromptTemplate.from_messages(
+        #     [
+        #         (
+        #             "system",
+        #             "\n"
+        #             "당신은 사용자가 내놓은 질문과 대답이 아래의 Context에 기반한 대답인지를 판단합니다. \n"
+        #             "당신은 짧고 간결하게 'grounded','notSure' 또는 'notGrounded'로 대답해야 합니다.\n",
+        #             "# Context: {context}\n"
+        #         ),
+        #         (
+        #             "human",
+        #             "# Question: {question}\n"
+        #             "# Answer: {answer}\n"
+        #         ),
+        #     ]
+        # )
+        # model = ChatOpenAI(temperature=0, model=StaticVariables.GROUNDEDNESS_CHECK_MODEL)
+        # chain = prompt | model | StrOutputParser()
+        # response = await chain.ainvoke(
+        #     {
+        #         "question": state["question"],
+        #         "answer": state["answer"],
+        #         "context": state["context"],
+        #     }
+        # )
 
-        state["relevance"] = response
+        state["relevance"] = "grounded"
         return state
 
     ### 쿼리 재작성 노드 ###
@@ -231,8 +257,8 @@ class RAGChain:
                 (session_id,),
             ) as cursors:
                 result = await cursors.fetchall()
-                for node in result:
-                    print(f"node: {node}")
+                # for node in result:
+                #     print(f"node: {node}")
         return result
 
     async def update_chat_history(self, session_id: str, question: str, answer: str):
