@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { AppstoreOutlined, SearchOutlined } from "@ant-design/icons";
 import { CiCalculator1 } from "react-icons/ci";
 import { FaBalanceScaleLeft } from "react-icons/fa";
 
@@ -61,16 +60,6 @@ const Header2 = ({ onQuestionSelect, isAiResponding, onNavigateToHome }) => {
               </a>
             </li>
             <li>
-              <a
-                href="/cal"
-                onClick={() => handleTabClick("cal")}
-                className={activeTab === "cal" ? "active" : ""}
-              >
-                <CiCalculator1 className="nav-icon" />
-                <span>Cal</span>
-              </a>
-            </li>
-            <li>
               {/* <a
                  onClick={toggleSearch}
                  className={isSearchVisible ? "active" : ""}
@@ -79,6 +68,16 @@ const Header2 = ({ onQuestionSelect, isAiResponding, onNavigateToHome }) => {
                  <SearchOutlined className="nav-icon" />
                  <span>검색</span>
               </a> */}
+            </li>
+            <li>
+              <a
+                href="/cal"
+                onClick={() => handleTabClick("cal")}
+                className={activeTab === "cal" ? "active" : ""}
+              >
+                <CiCalculator1 className="nav-icon" />
+                <span>Cal</span>
+              </a>
             </li>
           </ul>
         </nav>

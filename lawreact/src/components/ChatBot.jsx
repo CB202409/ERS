@@ -15,7 +15,7 @@ const ChatBot = ({ addMessage, aiResponding, setIsAiResponding, externalMessage 
     });
 
     const [isExpert, setIsExpert] = useState(false);
-    const [animationCompleted, setAnimationCompleted] = useState({}); // 애니메이션 완료 상태 관리
+    const [animationCompleted, setAnimationCompleted] = useState({});
 
     const getSessionId = () => {
         let sessionId = sessionStorage.getItem('session_id');
@@ -27,6 +27,19 @@ const ChatBot = ({ addMessage, aiResponding, setIsAiResponding, externalMessage 
     };
 
     const [sessionId, setSessionId] = useState(getSessionId());
+
+    useEffect(() => {
+        console.log(`isExpert 초기값: ${isExpert ? "true" : "false"}`);
+
+        return () => {
+            console.log(`컴포넌트 언마운트 - isExpert 초기화`); 
+            setIsExpert(false); 
+        };
+    }, []);
+
+    useEffect(() => {
+        console.log(`isExpert 상태가 변경됨: ${isExpert ? "true" : "false"}`);
+    }, [isExpert]);
 
     useEffect(() => {
         if (chatLog.length === 0) {
@@ -50,12 +63,13 @@ const ChatBot = ({ addMessage, aiResponding, setIsAiResponding, externalMessage 
 
     const handleExternalMessage = async (message) => {
         if (!aiResponding) {
+            console.log(`외부 메시지 전송 - isExpert 상태: ${isExpert ? "true" : "false"}`);
             const messageData = { query: message, session_id: sessionId, is_expert: isExpert };
             setChatLog((prevChatLog) => [...prevChatLog, { sender: "사용자", message }]);
             setIsAiResponding(true);
 
             try {
-                const response = await fetch('http://localhost:8000/v1/chatbot/advice', {
+                const response = await fetch('https://localhost:8000/v1/chatbot/advice', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(messageData),

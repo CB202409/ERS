@@ -54,7 +54,7 @@ const ChatBot3 = ({ addMessage, aiResponding, setIsAiResponding, externalMessage
             setIsAiResponding(true);
 
             try {
-                const response = await fetch('http://localhost:8000/v1/chatbot/advice', {
+                const response = await fetch('https://localhost:8000/v1/chatbot/calculator', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(messageData),
