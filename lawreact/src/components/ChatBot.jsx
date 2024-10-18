@@ -62,8 +62,6 @@ const ChatBot = ({ addMessage, aiResponding, setIsAiResponding, externalMessage 
             setIsAiResponding(true);
 
             try {
-                console.log("is_expert 값:", messageData.is_expert);
-
                 const response = await fetch('http://localhost:8000/v1/chatbot/advice' /* 실제 API로 변경 */, {
                     method: 'POST',
                     headers: {
@@ -74,7 +72,7 @@ const ChatBot = ({ addMessage, aiResponding, setIsAiResponding, externalMessage 
 
                 const data = await response.json();
 
-                setChatLog((prevChatLog) => [...prevChatLog, { sender: "AI", message: data.response }]);
+                setChatLog((prevChatLog) => [...prevChatLog, { sender: "AI", message: data.answer }]);
 
             } catch (error) {
                 setChatLog((prevChatLog) => [...prevChatLog, { sender: "AI", message: "서버에 문제가 발생했습니다." }]);
@@ -149,7 +147,6 @@ const ChatBot = ({ addMessage, aiResponding, setIsAiResponding, externalMessage 
 
     const toggleExpertMode = () => {
         setIsExpert(!isExpert);
-        console.log("더 궁금해요 상태:", !isExpert);
     };
 
     return (
@@ -223,3 +220,4 @@ const ChatBot = ({ addMessage, aiResponding, setIsAiResponding, externalMessage 
 };
 
 export default ChatBot;
+                <small>법적 책임 안 짐</small>
