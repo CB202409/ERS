@@ -11,12 +11,14 @@ const CalView = () => {
   const navigate = useNavigate(); 
 
   useEffect(() => {
-    setSessionId(uuid4()); 
-    localStorage.removeItem("chatLog"); 
+    const newSessionId = uuid4();
+    setSessionId(newSessionId); 
+    sessionStorage.setItem('session_id', newSessionId);  
+    sessionStorage.removeItem("chatLog");  
   }, []);
 
   const onNavigateToHome = () => {
-    localStorage.removeItem("chatLog"); 
+    sessionStorage.removeItem("chatLog");  
     navigate("/home"); 
   };
 

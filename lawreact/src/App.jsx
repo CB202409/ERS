@@ -9,12 +9,12 @@ const App = () => {
 
   useEffect(() => {
     const buildTimestamp = Date.now();
-    const lastVisitTime = localStorage.getItem('lastVisitTime');
+    const lastVisitTime = sessionStorage.getItem('lastVisitTime');  
 
     if (!lastVisitTime || parseInt(lastVisitTime) < buildTimestamp) {
       const timer = setTimeout(() => {
         setShowLogoScreen(false);
-        localStorage.setItem('lastVisitTime', Date.now().toString());
+        sessionStorage.setItem('lastVisitTime', Date.now().toString());  
       }, 1500);
       return () => clearTimeout(timer);
     } else {

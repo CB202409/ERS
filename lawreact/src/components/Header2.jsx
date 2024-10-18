@@ -3,8 +3,8 @@ import { AppstoreOutlined, SearchOutlined } from "@ant-design/icons";
 import { CiCalculator1 } from "react-icons/ci";
 import { FaBalanceScaleLeft } from "react-icons/fa";
 
-
 const Header2 = ({ onQuestionSelect, isAiResponding, onNavigateToHome }) => {
+  const [activeTab, setActiveTab] = useState("cal"); // 기본 활성화 탭을 "cal"로 설정
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredResults, setFilteredResults] = useState([]);
@@ -35,33 +35,50 @@ const Header2 = ({ onQuestionSelect, isAiResponding, onNavigateToHome }) => {
     }
   };
 
+  const handleTabClick = (tab) => {
+    setActiveTab(tab); // 클릭된 탭 활성화
+  };
+
   return (
     <header className="header">
       <div className="header__inner">
         <div className="header__logo">
-          <a href="/cal">
-            <h1>CalChat</h1>
-          </a>
+          <h1>CalChat</h1>
         </div>
         <nav className="header__nav">
           <ul>
             <li>
-            <a onClick={onNavigateToHome} style={{ cursor: "pointer" }}>
-              <FaBalanceScaleLeft className="nav-icon" />
-              <span>chat</span>
-            </a>
+              <a
+                onClick={() => {
+                  handleTabClick("chat");
+                  onNavigateToHome();
+                }}
+                className={activeTab === "chat" ? "active" : ""}
+                style={{ cursor: "pointer" }}
+              >
+                <FaBalanceScaleLeft className="nav-icon" />
+                <span>Chat</span>
+              </a>
             </li>
             <li>
-              <a href="/cal">
-                <CiCalculator1 className="nav-icon"/>
+              <a
+                href="/cal"
+                onClick={() => handleTabClick("cal")}
+                className={activeTab === "cal" ? "active" : ""}
+              >
+                <CiCalculator1 className="nav-icon" />
                 <span>Cal</span>
               </a>
             </li>
             <li>
-              <a onClick={toggleSearch} style={{ cursor: "pointer" }}>
-                <SearchOutlined className="nav-icon"/>
-                <span>검색</span>
-              </a>
+              {/* <a
+                 onClick={toggleSearch}
+                 className={isSearchVisible ? "active" : ""}
+                 style={{ cursor: "pointer" }}
+               >
+                 <SearchOutlined className="nav-icon" />
+                 <span>검색</span>
+              </a> */}
             </li>
           </ul>
         </nav>
@@ -71,7 +88,7 @@ const Header2 = ({ onQuestionSelect, isAiResponding, onNavigateToHome }) => {
         <div className="search-container">
           <input
             type="text"
-            placeholder="키워드 질문 예) 실업, 최저, 퇴직"
+            placeholder="계산 봇에서는 이용할 수 없습니다."
             value={searchTerm}
             onChange={handleSearchInputChange}
             disabled={isAiResponding}

@@ -1,46 +1,45 @@
 import React, { useState, useEffect, useRef } from "react";
-import { TypeAnimation } from 'react-type-animation';
-import { GiWolfHowl } from "react-icons/gi"; 
-import { FiCopy } from "react-icons/fi"; 
-import { AiOutlineReload } from "react-icons/ai";  
-import { v4 as uuidv4 } from 'uuid';  
-import { marked } from 'marked';  
+import { GiWolfHowl } from "react-icons/gi";
+import { FiCopy } from "react-icons/fi";
+import { AiOutlineReload } from "react-icons/ai";
+import { v4 as uuidv4 } from 'uuid';
+import { marked } from 'marked';
 
 const ChatBot = ({ addMessage, aiResponding, setIsAiResponding, externalMessage }) => {
     const chatLogRef = useRef(null);
     const [userInput, setUserInput] = useState("");
     const [isUserScrolling, setIsUserScrolling] = useState(false);
-    const [animationEnded, setAnimationEnded] = useState({});
     const [chatLog, setChatLog] = useState(() => {
-        const storedChatLog = JSON.parse(localStorage.getItem('chatLog'));
-        return storedChatLog || [];  
+        const storedChatLog = JSON.parse(sessionStorage.getItem('chatLog'));
+        return storedChatLog || [];
     });
 
-    const [isExpert , setIsExpert] = useState(false); //false 기본값 
+    const [isExpert, setIsExpert] = useState(false);
+    const [animationCompleted, setAnimationCompleted] = useState({}); // 애니메이션 완료 상태 관리
 
     const getSessionId = () => {
-        let sessionId = localStorage.getItem('session_id');
+        let sessionId = sessionStorage.getItem('session_id');
         if (!sessionId) {
-            sessionId = uuidv4(); 
-            localStorage.setItem('session_id', sessionId);  // localStorage 저장
+            sessionId = uuidv4();
+            sessionStorage.setItem('session_id', sessionId);
         }
         return sessionId;
     };
 
-    const [sessionId, setSessionId] = useState(getSessionId());  // session_id 설정
+    const [sessionId, setSessionId] = useState(getSessionId());
 
     useEffect(() => {
         if (chatLog.length === 0) {
-            const welcomeMessage = {
-                sender: "AI",
-                message: "무엇을 도와드릴까요? 정해진 질문이 없으시다면 키워드 질문을 이용하세요"
+            const welcomeMessage = { 
+                sender: "AI", 
+                message: "무엇을 도와드릴까요? 정해진 질문이 없으시다면 키워드 질문을 이용하세요."
             };
             setChatLog([welcomeMessage]);
         }
     }, []);
 
     useEffect(() => {
-        localStorage.setItem('chatLog', JSON.stringify(chatLog));
+        sessionStorage.setItem('chatLog', JSON.stringify(chatLog));
     }, [chatLog]);
 
     useEffect(() => {
@@ -51,32 +50,23 @@ const ChatBot = ({ addMessage, aiResponding, setIsAiResponding, externalMessage 
 
     const handleExternalMessage = async (message) => {
         if (!aiResponding) {
-            const messageData = {
-                query: message,
-                session_id: sessionId,
-                is_expert: isExpert
-            };
-
+            const messageData = { query: message, session_id: sessionId, is_expert: isExpert };
             setChatLog((prevChatLog) => [...prevChatLog, { sender: "사용자", message }]);
-
             setIsAiResponding(true);
 
             try {
-                const response = await fetch('http://localhost:8000/v1/chatbot/advice' /* 실제 API로 변경 */, {
+                const response = await fetch('http://localhost:8000/v1/chatbot/advice', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(messageData)
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(messageData),
                 });
 
                 const data = await response.json();
-
-                setChatLog((prevChatLog) => [...prevChatLog, { sender: "AI", message: data.answer }]);
-
+                const newMessage = { sender: "AI", message: data.answer };
+                setChatLog((prevChatLog) => [...prevChatLog, newMessage]);
             } catch (error) {
-                setChatLog((prevChatLog) => [...prevChatLog, { sender: "AI", message: "서버에 문제가 발생했습니다." }]);
                 console.error('Error calling the server:', error);
+                setChatLog((prevChatLog) => [...prevChatLog, { sender: "AI", message: "서버에 문제가 발생했습니다." }]);
             }
 
             setIsAiResponding(false);
@@ -87,7 +77,17 @@ const ChatBot = ({ addMessage, aiResponding, setIsAiResponding, externalMessage 
         e.preventDefault();
         if (userInput.trim() && !aiResponding) {
             await handleExternalMessage(userInput);
-            setUserInput("");  
+            setUserInput("");
+        }
+    };
+
+    const handleKeyDown = (e) => {
+        if (e.key === "Enter" && e.ctrlKey) {
+            e.preventDefault();
+            setUserInput(userInput + "\n");
+        } else if (e.key === "Enter" && !e.ctrlKey) {
+            e.preventDefault();
+            handleFormSubmit(e);
         }
     };
 
@@ -104,46 +104,43 @@ const ChatBot = ({ addMessage, aiResponding, setIsAiResponding, externalMessage 
         }
     }, [chatLog, isUserScrolling]);
 
-    const handleAnimationEnd = (index) => {
-        setAnimationEnded(prev => ({
-            ...prev,
-            [index]: true 
-        }));
-    };
-
     const handleCopyMessage = (message) => {
-        navigator.clipboard.writeText(message).then(() => {
-            alert("메시지가 복사되었습니다!"); 
-        }).catch(() => {
-            alert("복사에 실패했습니다.");
-        });
+        navigator.clipboard.writeText(message)
+            .then(() => alert("메시지가 복사되었습니다!"))
+            .catch(() => alert("복사에 실패했습니다."));
     };
 
     const handleNewChat = () => {
         const newSessionId = uuidv4();
-        setSessionId(newSessionId);  
-        const welcomeMessage = {
-            sender: "AI",
-            message: "무엇을 도와드릴까요? 정해진 질문이 없으시다면 키워드 질문을 이용하세요"
+        setSessionId(newSessionId);
+        const welcomeMessage = { 
+            sender: "AI", 
+            message: "무엇을 도와드릴까요? 정해진 질문이 없으시다면 키워드 질문을 이용하세요" 
         };
-        setChatLog([welcomeMessage]); 
-        localStorage.setItem('session_id', newSessionId);  
-        localStorage.removeItem('chatLog');  
+        setChatLog([welcomeMessage]); // 채팅 로그 초기화
+        setAnimationCompleted({}); // 애니메이션 상태 초기화
+        sessionStorage.setItem('session_id', newSessionId);
+        sessionStorage.removeItem('chatLog');
     };
 
-    const getMarkdownContent = (message) => {
-        return { __html: marked(message) };  // Markdown을 HTML로 변환
-    };
-
-    const handleKeyDown = (e) => {
-        if (e.key === "Enter" && e.ctrlKey) {
-            e.preventDefault();  // 기본 Enter 동작 방지
-            handleFormSubmit(e);  // 메시지 전송
-        } else if (e.key === "Enter" && !e.ctrlKey) {
-            e.preventDefault();  // 기본 Enter 동작 방지
-            setUserInput(userInput + "\n");  // 줄바꿈 추가
+    const typeMessage = (element, message, index = 0) => {
+        if (index < message.length) {
+            const chunk = message.slice(0, index + 1);
+            element.innerHTML = marked.parse(chunk);
+            setTimeout(() => typeMessage(element, message, index + 1), 10);
+        } else {
+            setAnimationCompleted((prev) => ({ ...prev, [element.id]: true }));
         }
     };
+
+    useEffect(() => {
+        chatLog.forEach((msg, index) => {
+            if (msg.sender === "AI" && !animationCompleted[`ai-message-${index}`]) {
+                const element = document.getElementById(`ai-message-${index}`);
+                if (element) typeMessage(element, msg.message);
+            }
+        });
+    }, [chatLog]);
 
     const toggleExpertMode = () => {
         setIsExpert(!isExpert);
@@ -157,18 +154,7 @@ const ChatBot = ({ addMessage, aiResponding, setIsAiResponding, externalMessage 
                         {msg.sender === "AI" && (
                             <div style={{ display: 'flex', alignItems: 'center' }}>
                                 <GiWolfHowl size={24} style={{ marginRight: '8px' }} />
-                                {!animationEnded[index] ? (
-                                    <TypeAnimation
-                                        sequence={[msg.message, 1000]}
-                                        speed={70} // 타이핑 속도
-                                        style={{ fontSize: '1em' }}
-                                        repeat={1}
-                                        cursor={false}
-                                        onFinished={() => handleAnimationEnd(index)}
-                                    />
-                                ) : (
-                                    <span dangerouslySetInnerHTML={getMarkdownContent(msg.message)} />
-                                )}
+                                <div id={`ai-message-${index}`} />
                                 <FiCopy
                                     size={16}
                                     style={{ marginLeft: '8px', cursor: 'pointer' }}
@@ -178,7 +164,7 @@ const ChatBot = ({ addMessage, aiResponding, setIsAiResponding, externalMessage 
                             </div>
                         )}
                         {msg.sender === "사용자" && (
-                            <span dangerouslySetInnerHTML={getMarkdownContent(msg.query || msg.message)} />
+                            <span dangerouslySetInnerHTML={{ __html: marked(msg.query || msg.message) }} />
                         )}
                     </div>
                 ))}
@@ -192,32 +178,31 @@ const ChatBot = ({ addMessage, aiResponding, setIsAiResponding, externalMessage 
                     title="새 채팅 시작"
                 />
                 <textarea
-                     value={userInput}
-                     onKeyDown={handleKeyDown}
-                     onChange={(e) => setUserInput(e.target.value)}
-                     placeholder="메시지를 입력하세요"
-                     disabled={aiResponding}
+                    value={userInput}
+                    onKeyDown={handleKeyDown}
+                    onChange={(e) => setUserInput(e.target.value)}
+                    placeholder="메시지를 입력하세요"
+                    disabled={aiResponding}
                 />
                 <button type="submit" disabled={aiResponding}>전송</button>
             </form>
 
-            <div className ="expert-toggle">
+            <div className="expert-toggle">
                 <label>
                     <input
                         type="checkbox"
                         checked={isExpert}
                         onChange={toggleExpertMode}
                     />
-                    <span>더 궁금해요{isExpert ? 'On' : 'OFF'}</span>
+                    <span>더 궁금해요 {isExpert ? 'On' : 'Off'}</span>
                 </label>
             </div>
 
             <div className="word">
-                <small>AI 기반의 서비스로 이용 시 예상하지 못한 피해가 발생할 수 있으니, 대답을 한 번 더 확인하세요.</small>
+                <small>AI 기반의 서비스로 예상치 못한 피해가 발생할 수 있으니, 대답을 꼭 확인하세요.</small>
             </div>
         </div>
     );
 };
 
 export default ChatBot;
-                <small>법적 책임 안 짐</small>
