@@ -25,7 +25,7 @@
   - Sparse vector: Kiwi 형태소 분석기를 통해 형태소 분할 후, 불용어 제거 한 뒤 BM25 알고리즘 기반으로 저장
 ### RAGAS를 이용한 하이퍼파라미터 미세조정
 Chunk Size, Chunk Overlap, k, alpha 값을 조정하고, 정량적으로 테스트하며 성능이 좋은 하이퍼파라미터를 사용
-### 질문의 내용이 문서에 기반한 것인 지를 확인하는 AGENT
+### LLM의 대답이 문서에 기반한 것인 지를 확인하는 AGENT
 - LLM이 임의의 판단으로 대답을 한 것인지를 확인해 Hallucination이 생긴 대답은 쿼리를 재작성하도록 함.
 - 만약 Hallucination이 반복된다면, 문서에서 내용을 찾을 수 없음을 나타내고 종료.
 ## FlowChart
